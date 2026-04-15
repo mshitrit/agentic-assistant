@@ -4,14 +4,13 @@ import json
 # ==========================================
 # 1. Configuration (Fill these in!)
 # ==========================================
-JIRA_DOMAIN = "https://issues.redhat.com"  # Update if using a different instance
+JIRA_DOMAIN = "https://redhat.atlassian.net"
 ISSUE_KEY = "PROJ-123"                     # The specific ticket to test on
 
-# Authentication details
-# If using a Service Account or standard Jira Cloud, use Username + API Token.
-# If Red Hat's internal Jira requires a Personal Access Token (PAT), see the note below.
+# Jira Cloud (redhat.atlassian.net): use your Atlassian account email + API Token
+# API tokens: https://id.atlassian.com/manage-profile/security/api-tokens
 JIRA_USER = "your-email@redhat.com"
-JIRA_TOKEN = "your_api_or_personal_access_token"
+JIRA_TOKEN = "your_api_token"
 
 # ==========================================
 # 2. Setup the Request
@@ -38,7 +37,8 @@ response = requests.post(
     url,
     data=payload,
     headers=headers,
-    auth=(JIRA_USER, JIRA_TOKEN)
+    auth=(JIRA_USER, JIRA_TOKEN),
+    timeout=10
 )
 
 # Check the results
