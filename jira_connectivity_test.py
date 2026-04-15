@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 
@@ -7,10 +8,12 @@ import json
 JIRA_DOMAIN = "https://redhat.atlassian.net"
 ISSUE_KEY = "PROJ-123"                     # The specific ticket to test on
 
-# Jira Cloud (redhat.atlassian.net): use your Atlassian account email + API Token
-# API tokens: https://id.atlassian.com/manage-profile/security/api-tokens
 JIRA_USER = "your-email@redhat.com"
-JIRA_TOKEN = "your_api_token"
+
+with open("jira_token.txt") as f:
+    # Jira Cloud (redhat.atlassian.net): use your Atlassian account email + API Token
+    # API tokens: https://id.atlassian.com/manage-profile/security/api-tokens
+    JIRA_TOKEN = f.read().strip()
 
 # ==========================================
 # 2. Setup the Request

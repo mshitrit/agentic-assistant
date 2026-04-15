@@ -1,0 +1,25 @@
+# Credentials & secrets
+jira_token.txt
+*.token
+.env
+.env.*
+
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
