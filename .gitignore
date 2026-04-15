@@ -1,5 +1,6 @@
 # Credentials & secrets
 jira_token.txt
+jira_config.txt
 *.token
 .env
 .env.*
