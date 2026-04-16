@@ -1,6 +1,11 @@
 import requests
 import json
 
+# Connectivity test script for Jira Cloud.
+# Verifies that authentication and write access are working correctly by posting
+# a test comment to the configured issue (ISSUE_KEY in jira_config.txt).
+# Run once to confirm credentials before using status_poller.py.
+
 # ==========================================
 # 1. Configuration (Fill these in!)
 # ==========================================

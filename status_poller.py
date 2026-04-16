@@ -2,6 +2,10 @@ import requests
 import json
 import time
 
+# Polls a specific Jira issue (ISSUE_KEY in jira_config.txt) every 20 seconds
+# and detects status changes. When a status change is detected, automatically
+# posts a comment on the ticket noting the old and new status values.
+
 config = {}
 with open("jira_config.txt") as f:
     for line in f:
