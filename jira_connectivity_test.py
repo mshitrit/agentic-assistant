@@ -4,8 +4,6 @@ import json
 # ==========================================
 # 1. Configuration (Fill these in!)
 # ==========================================
-JIRA_DOMAIN = "https://redhat.atlassian.net"
-
 config = {}
 with open("jira_config.txt") as f:
     for line in f:
@@ -14,23 +12,39 @@ with open("jira_config.txt") as f:
 
 JIRA_USER  = config["JIRA_USER"]
 # Jira Cloud (redhat.atlassian.net): use your Atlassian account email + API Token
-# API tokens: https://id.atlassian.com/manage-profile/security/api-tokens
+# Generate API tokens: https://id.atlassian.com/manage-profile/security/api-tokens
 JIRA_TOKEN = config["JIRA_TOKEN"]
 ISSUE_KEY  = config["ISSUE_KEY"]
+# CLOUD_ID: found at https://api.atlassian.com/oauth/token/accessible-resources (the "id" field)
+CLOUD_ID   = config["CLOUD_ID"]
 
 # ==========================================
 # 2. Setup the Request
 # ==========================================
-url = f"{JIRA_DOMAIN}/rest/api/2/issue/{ISSUE_KEY}/comment"
+url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{ISSUE_KEY}/comment"
 
 headers = {
     "Accept": "application/json",
     "Content-Type": "application/json"
 }
 
-# The message you want to post
+# The message you want to post (API v3 requires Atlassian Document Format)
 payload = json.dumps({
-    "body": "🤖 **ACK:** Hello from Python! Verifying write access to this ticket."
+    "body": {
+        "type": "doc",
+        "version": 1,
+        "content": [
+            {
+                "type": "paragraph",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "ACK: Hello from Python! Verifying write access to this ticket."
+                    }
+                ]
+            }
+        ]
+    }
 })
 
 # ==========================================
