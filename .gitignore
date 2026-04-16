@@ -1,5 +1,4 @@
 # Credentials & secrets
-jira_token.txt
 jira_config.txt
 *.token
 .env
@@ -7,6 +6,7 @@ jira_config.txt
 
 # IDE
 .idea/
+.cursor/
 
 # Python
 __pycache__/
