@@ -1,0 +1,18 @@
+# Jira Cloud configuration template
+# Copy this file to jira_config.txt and fill in the real values
+
+# Your Atlassian account email (used for authentication)
+JIRA_USER=your-email@redhat.com
+
+# API token for authenticating with Jira Cloud
+# Generate one at: https://id.atlassian.com/manage-profile/security/api-tokens
+JIRA_TOKEN=your_api_token
+
+# Cloud ID of your Jira instance
+# Retrieve it by calling (with your credentials):
+# curl -u "your-email:your_token" https://api.atlassian.com/oauth/token/accessible-resources
+# Look for the "id" field corresponding to "redhat.atlassian.net"
+CLOUD_ID=your-cloud-id
+
+# The Jira issue key to track (e.g. PROJ-123)
+ISSUE_KEY=PROJ-123
