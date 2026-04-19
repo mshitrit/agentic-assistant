@@ -16,3 +16,11 @@ CLOUD_ID=your-cloud-id
 
 # The Jira issue key to track (e.g. PROJ-123)
 ISSUE_KEY=PROJ-123
+
+# GCP project ID for Claude via Vertex AI
+# Enable Claude in Vertex AI Model Garden: https://console.cloud.google.com/vertex-ai/model-garden
+# Authenticate locally with: gcloud auth application-default login
+GCP_PROJECT_ID=your-gcp-project-id
+
+# GCP region where Claude is available (e.g. us-east5, europe-west1)
+GCP_REGION=us-east5

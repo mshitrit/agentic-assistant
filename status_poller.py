@@ -1,10 +1,11 @@
 import requests
 import json
 import time
+import anthropic
 
 # Polls a specific Jira issue (ISSUE_KEY in jira_config.txt) every 20 seconds
-# and detects status changes. When a status change is detected, automatically
-# posts a comment on the ticket noting the old and new status values.
+# and detects status changes. When a status change is detected, sends the ticket
+# title to a Claude AI agent and posts its response as a comment on the ticket.
 
 config = {}
 with open("jira_config.txt") as f:
@@ -12,23 +13,40 @@ with open("jira_config.txt") as f:
         key, _, value = line.strip().partition("=")
         config[key] = value
 
-JIRA_USER  = config["JIRA_USER"]
-JIRA_TOKEN = config["JIRA_TOKEN"]
-CLOUD_ID   = config["CLOUD_ID"]
-ISSUE_KEY  = config["ISSUE_KEY"]
+JIRA_USER   = config["JIRA_USER"]
+JIRA_TOKEN  = config["JIRA_TOKEN"]
+CLOUD_ID    = config["CLOUD_ID"]
+ISSUE_KEY   = config["ISSUE_KEY"]
+GCP_PROJECT = config["GCP_PROJECT_ID"]
+GCP_REGION  = config["GCP_REGION"]
 
 POLL_INTERVAL = 20  # seconds
 
 
-def get_issue_status():
+def get_issue_details():
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{ISSUE_KEY}"
     headers = {"Accept": "application/json"}
     response = requests.get(url, headers=headers, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     response.raise_for_status()
-    return response.json()["fields"]["status"]["name"]
+    fields = response.json()["fields"]
+    return fields["status"]["name"], fields["summary"]
 
 
-def post_comment(old_status: str, new_status: str):
+def ask_agent(title: str, old_status: str, new_status: str) -> str:
+    client = anthropic.AnthropicVertex(project_id=GCP_PROJECT, region=GCP_REGION)
+    prompt = (
+        f"A Jira ticket titled '{title}' just changed status from '{old_status}' to '{new_status}'. "
+        f"Briefly acknowledge this and suggest a next action in 1-2 sentences."
+    )
+    message = client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return message.content[0].text
+
+
+def post_comment(agent_response: str):
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{ISSUE_KEY}/comment"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
     body = json.dumps({
@@ -41,7 +59,7 @@ def post_comment(old_status: str, new_status: str):
                     "content": [
                         {
                             "type": "text",
-                            "text": f"ACK: Status changed from '{old_status}' to '{new_status}'."
+                            "text": agent_response
                         }
                     ]
                 }
@@ -50,22 +68,24 @@ def post_comment(old_status: str, new_status: str):
     })
     response = requests.post(url, data=body, headers=headers, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     if response.status_code == 201:
-        print(f"Comment posted: {old_status} → {new_status}")
+        print("Comment posted successfully.")
     else:
         print(f"Failed to post comment: {response.status_code} - {response.text}")
 
 
 if __name__ == "__main__":
     print(f"Polling {ISSUE_KEY} every {POLL_INTERVAL}s...")
-    last_status = get_issue_status()
+    last_status, _ = get_issue_details()
     print(f"Initial status: {last_status}")
 
     while True:
         time.sleep(POLL_INTERVAL)
-        current_status = get_issue_status()
+        current_status, title = get_issue_details()
         if current_status != last_status:
             print(f"Status changed: {last_status} → {current_status}")
-            post_comment(last_status, current_status)
+            agent_response = ask_agent(title, last_status, current_status)
+            print(f"Agent response: {agent_response}")
+            post_comment(agent_response)
             last_status = current_status
         else:
             print(f"No change. Status: {current_status}")
