@@ -27,3 +27,4 @@ class DebugMode(Flag):
     FULL_DISABLE = DISABLE_JIRA | DISABLE_AI
 
 DEBUG_MODE = DebugMode[config.get("DEBUG_MODE", "PRODUCTION")]
+LOG_LEVEL  = config.get("LOG_LEVEL", "INFO").upper()

@@ -41,6 +41,11 @@ GCP_REGION=us-east5
 # Leave empty or remove to use COMPONENTS instead
 ISSUE_KEY=PROJ-123
 
+# Log level — controls verbosity of console output
+# INFO:  standard output (default)
+# DEBUG: also prints the full agent prompt before each Claude call
+LOG_LEVEL=INFO
+
 # Debug mode — controls which external calls are active
 # PRODUCTION:   full behaviour, posts to Jira and calls Claude (default)
 # DISABLE_JIRA: print comments to console instead of posting to Jira
