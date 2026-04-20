@@ -1,5 +1,6 @@
-# Jira Cloud configuration template
-# Copy this file to jira_config.txt and fill in the real values
+# ==============================================
+# Jira
+# ==============================================
 
 # Your Atlassian account email (used for authentication)
 JIRA_USER=your-email@redhat.com
@@ -14,8 +15,15 @@ JIRA_TOKEN=your_api_token
 # Look for the "id" field corresponding to "redhat.atlassian.net"
 CLOUD_ID=your-cloud-id
 
-# The Jira issue key to track (e.g. PROJ-123)
-ISSUE_KEY=PROJ-123
+# Comma-separated list of Jira components to watch.
+# All open tickets belonging to any listed component will be tracked.
+# Ignored if ISSUE_KEY is set in the Debug section.
+# Example: COMPONENTS=Storage-based Remediation,Networking
+COMPONENTS=ComponentA,ComponentB
+
+# ==============================================
+# AI
+# ==============================================
 
 # GCP project ID for Claude via Vertex AI
 # Enable Claude in Vertex AI Model Garden: https://console.cloud.google.com/vertex-ai/model-garden
@@ -24,6 +32,14 @@ GCP_PROJECT_ID=your-gcp-project-id
 
 # GCP region where Claude is available (e.g. us-east5, europe-west1)
 GCP_REGION=us-east5
+
+# ==============================================
+# Debug
+# ==============================================
+
+# Track a specific ticket — takes priority over COMPONENTS if set (e.g. PROJ-123)
+# Leave empty or remove to use COMPONENTS instead
+ISSUE_KEY=PROJ-123
 
 # Debug mode — controls which external calls are active
 # PRODUCTION:   full behaviour, posts to Jira and calls Claude (default)
