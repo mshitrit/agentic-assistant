@@ -1,16 +1,11 @@
 import json
 import requests
 from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID, AI_PREFIX, DEBUG_MODE, DebugMode
+from jira.utils import extract_adf_text
 
 
 def extract_comment_text(comment: dict) -> str:
-    paragraphs = comment.get("body", {}).get("content", [])
-    return " ".join(
-        item.get("text", "")
-        for para in paragraphs
-        for item in para.get("content", [])
-        if item.get("type") == "text"
-    )
+    return extract_adf_text(comment.get("body", {}))
 
 
 def has_ai_comment(fields: dict) -> bool:

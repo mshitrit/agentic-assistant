@@ -3,6 +3,7 @@ from datetime import datetime
 from config.settings import ISSUE_KEY, COMPONENTS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT
 from jira.client import fetch_issues_by_components, get_issue_details
 from jira.comments import has_ai_comment, post_comment, extract_comment_text
+from jira.utils import extract_adf_text
 from agent.claude import ask_agent
 
 
@@ -36,7 +37,16 @@ if __name__ == "__main__":
                 continue
             title = fields["summary"]
             print(f"Trigger detected on {key}: '{title}'")
-            agent_response = ask_agent(title)
+            context = {
+                "title":       fields.get("summary"),
+                "description": extract_adf_text(fields.get("description") or {}),
+                "status":      fields.get("status", {}).get("name"),
+                "priority":    fields.get("priority", {}).get("name"),
+                "issue_type":  fields.get("issuetype", {}).get("name"),
+                "assignee":    (fields.get("assignee") or {}).get("displayName"),
+                "components":  [c["name"] for c in fields.get("components", [])],
+            }
+            agent_response = ask_agent(context)
             print(f"Agent response: {agent_response}")
             post_comment(key, agent_response)
         print("--- End of cycle ---")
