@@ -7,7 +7,7 @@ A Python-based PoC that monitors a Jira ticket for status changes and triggers a
 | File | Description |
 |---|---|
 | `jira_connectivity_test.py` | One-shot test to verify Jira credentials and write access |
-| `status_poller.py` | Polls a Jira ticket every 20s, detects status changes, and posts an AI-generated comment |
+| `status_poller.py` | Polls tracked Jira tickets every 20s and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
 
 ## Prerequisites
 
@@ -54,6 +54,20 @@ cp jira_config.template.txt jira_config.txt
 See `jira_config.template.txt` for field descriptions and how to retrieve each value.
 
 > `jira_config.txt` is git-ignored and should never be committed.
+
+## How to Request AI Analysis
+
+The agent can be triggered on any tracked Jira ticket using either method:
+
+### Option 1: Add a label
+Add the label `ai-assist` to the ticket via the Jira UI.
+
+### Option 2: Post a comment
+Add a comment containing `/ai-assist` anywhere in the text.
+
+Once triggered, the agent will post an AI-generated comment (prefixed with 🤖 [AI Generated]) on the ticket.
+The agent will only comment once per trigger — if an AI-generated comment already exists, it will not post again.
+To request another analysis, remove the existing AI comment or add a new `/ai-assist` comment.
 
 ## Usage
 
