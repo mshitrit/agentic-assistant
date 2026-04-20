@@ -1,30 +1,14 @@
-import requests
 import json
+import requests
+from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID, ISSUE_KEY
 
 # Connectivity test script for Jira Cloud.
 # Verifies that authentication and write access are working correctly by posting
 # a test comment to the configured issue (ISSUE_KEY in jira_config.txt).
-# Run once to confirm credentials before using status_poller.py.
+# Run once to confirm credentials before using poller.py.
 
 # ==========================================
-# 1. Configuration (Fill these in!)
-# ==========================================
-config = {}
-with open("jira_config.txt") as f:
-    for line in f:
-        key, _, value = line.strip().partition("=")
-        config[key] = value
-
-JIRA_USER  = config["JIRA_USER"]
-# Jira Cloud (redhat.atlassian.net): use your Atlassian account email + API Token
-# Generate API tokens: https://id.atlassian.com/manage-profile/security/api-tokens
-JIRA_TOKEN = config["JIRA_TOKEN"]
-ISSUE_KEY  = config["ISSUE_KEY"]
-# CLOUD_ID: found at https://api.atlassian.com/oauth/token/accessible-resources (the "id" field)
-CLOUD_ID   = config["CLOUD_ID"]
-
-# ==========================================
-# 2. Setup the Request
+# Setup the Request
 # ==========================================
 url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{ISSUE_KEY}/comment"
 
@@ -53,11 +37,10 @@ payload = json.dumps({
 })
 
 # ==========================================
-# 3. Execute and Verify
+# Execute and Verify
 # ==========================================
 print(f"Attempting to post comment to {ISSUE_KEY}...")
 
-# Sending the POST request using Basic Authentication
 response = requests.post(
     url,
     data=payload,
@@ -66,7 +49,6 @@ response = requests.post(
     timeout=10
 )
 
-# Check the results
 if response.status_code == 201:
     print("✅ Success! Check your Jira ticket to see the comment.")
 else:

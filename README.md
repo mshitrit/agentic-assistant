@@ -1,13 +1,29 @@
 # Agentic Assistant
 
-A Python-based PoC that monitors a Jira ticket for status changes and triggers a Claude AI agent to post a contextual comment in response.
+A Python-based PoC that monitors Jira tickets and triggers a Claude AI agent to post a contextual comment when requested via a label or comment.
+
+## Project Structure
+
+```
+agentic-assistant/
+├── config/
+│   ├── settings.py               # loads jira_config.txt, exposes all constants
+│   └── jira_config.template.txt  # configuration template
+├── jira/
+│   ├── client.py                 # fetch issues and issue details from Jira API
+│   └── comments.py               # post, check and parse Jira comments
+├── agent/
+│   └── claude.py                 # Claude AI via Vertex AI
+├── main.py                       # main loop and trigger detection
+└── jira_connectivity_test.py     # one-shot connectivity and write access test
+```
 
 ## Scripts
 
 | File | Description |
 |---|---|
 | `jira_connectivity_test.py` | One-shot test to verify Jira credentials and write access |
-| `status_poller.py` | Polls tracked Jira tickets every 20s and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
+| `main.py` | Polls tracked Jira tickets every 20s and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
 
 ## Prerequisites
 
@@ -23,13 +39,13 @@ Required by both scripts to make HTTP calls to the Jira REST API.
 pip install requests
 ```
 
-### 3. Claude AI library (for `status_poller.py` only)
+### 3. Claude AI library (for `poller.py` only)
 Required to call the Claude AI model via Google Cloud Vertex AI.
 ```bash
 pip install "anthropic[vertex]"
 ```
 
-### 4. Google Cloud CLI (for `status_poller.py` only)
+### 4. Google Cloud CLI (for `poller.py` only)
 Required to authenticate with GCP so the Claude library can access Vertex AI.
 
 Install:
@@ -48,10 +64,10 @@ gcloud auth application-default login
 
 Copy the template and fill in your values:
 ```bash
-cp jira_config.template.txt jira_config.txt
+cp config/jira_config.template.txt jira_config.txt
 ```
 
-See `jira_config.template.txt` for field descriptions and how to retrieve each value.
+See `config/jira_config.template.txt` for field descriptions and how to retrieve each value.
 
 > `jira_config.txt` is git-ignored and should never be committed.
 
@@ -76,7 +92,7 @@ To request another analysis, remove the existing AI comment or add a new `/ai-as
 python jira_connectivity_test.py
 ```
 
-**Start the status poller:**
+**Start the poller:**
 ```bash
-python status_poller.py
+python main.py
 ```
