@@ -3,6 +3,7 @@ import json
 import time
 import anthropic
 from enum import Flag, auto
+from datetime import datetime
 
 # Polls Jira issues every 20 seconds and checks for opt-in AI assist triggers.
 # Watches either a specific ticket (ISSUE_KEY) or all open tickets belonging
@@ -139,6 +140,7 @@ if __name__ == "__main__":
 
     while True:
         time.sleep(POLL_INTERVAL)
+        print(f"\n--- Poll cycle {datetime.now().strftime('%H:%M:%S')} ---")
         for key in issue_keys:
             fields = get_issue_details(key)
             if not should_trigger(fields):
@@ -152,3 +154,4 @@ if __name__ == "__main__":
             agent_response = ask_agent(title)
             print(f"Agent response: {agent_response}")
             post_comment(key, agent_response)
+        print("--- End of cycle ---")
