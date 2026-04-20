@@ -4,6 +4,9 @@ jira_config.txt
 .env
 .env.*
 
+# Agent living memory (agent-maintained, not committed)
+memory/living/
+
 # IDE
 .idea/
 .cursor/

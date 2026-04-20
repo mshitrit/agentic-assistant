@@ -71,6 +71,28 @@ See `config/jira_config.template.txt` for field descriptions and how to retrieve
 
 > `jira_config.txt` is git-ignored and should never be committed.
 
+## Memory
+
+The agent uses a two-tier memory system to provide domain-aware analysis:
+
+### Verified Memory (`memory/verified/`)
+Human-curated knowledge base committed to git. Contains per-operator subdirectories (e.g. `memory/verified/sbr/`) with files covering overview, architecture, failure modes, runbook, and code map.
+
+This is the stable, approved baseline the agent always consults.
+
+### Living Memory (`memory/living/`)
+Agent-maintained copy of the verified memory. Git-ignored — not committed.
+
+**Setup (one-time):** Copy verified memory to living memory before running the poller:
+```bash
+cp -r memory/verified/ memory/living/
+```
+
+The agent may update files in `memory/living/` during ticket analysis when it detects discrepancies with the current codebase. Periodically review the diff between the two and promote correct changes to verified memory:
+```bash
+diff -r memory/verified/ memory/living/
+```
+
 ## How to Request AI Analysis
 
 The agent can be triggered on any tracked Jira ticket using either method:
