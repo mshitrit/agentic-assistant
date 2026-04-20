@@ -20,3 +20,14 @@
 - Ties the agent to a specific person's credentials
 
 **Desired solution:** Create a dedicated Jira service account for the agent (e.g. `ai-agent@redhat.com`). This makes AI activity clearly identifiable in the audit trail and decouples the agent from any individual's account.
+
+## 3. Comment Pagination
+
+**Current approach:** Comments are fetched as part of the issue details request, which returns only the first 10 comments by default.
+
+**Why this is debt:**
+- Trigger detection (`/ai-assist` comment) may miss the trigger if it's beyond the first 10 comments
+- AI comment deduplication check may fail on tickets with many comments
+- Agent analysis may be incomplete — comments often contain key investigation findings, workarounds, and engineer discussions that inform a meaningful response
+
+**Desired solution:** Fetch comments via the dedicated paginated endpoint (`GET /rest/api/3/issue/{key}/comment`) to ensure all comments are checked.
