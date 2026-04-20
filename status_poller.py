@@ -39,7 +39,7 @@ def fetch_issues_by_components(components: list[str]) -> list[str]:
     jql = "component in ({}) AND statusCategory != Done".format(
         ", ".join(f'"{c}"' for c in components)
     )
-    url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/search"
+    url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/search/jql"
     headers = {"Accept": "application/json"}
     response = requests.get(url, headers=headers, params={"jql": jql, "fields": "key"}, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     response.raise_for_status()
