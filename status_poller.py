@@ -2,6 +2,7 @@ import requests
 import json
 import time
 import anthropic
+from enum import Flag, auto
 
 # Polls a specific Jira issue (ISSUE_KEY in jira_config.txt) every 20 seconds
 # and detects status changes. When a status change is detected, sends the ticket
@@ -23,6 +24,15 @@ GCP_REGION  = config["GCP_REGION"]
 POLL_INTERVAL = 20  # seconds
 
 
+class DebugMode(Flag):
+    PRODUCTION   = 0
+    DISABLE_JIRA = auto()  # print comments to console instead of posting to Jira
+    DISABLE_AI   = auto()  # skip Claude call, use a hardcoded response instead
+    FULL_DISABLE = DISABLE_JIRA | DISABLE_AI
+
+DEBUG_MODE = DebugMode[config.get("DEBUG_MODE", "PRODUCTION")]
+
+
 def get_issue_details():
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{ISSUE_KEY}"
     headers = {"Accept": "application/json"}
@@ -33,6 +43,8 @@ def get_issue_details():
 
 
 def ask_agent(title: str, old_status: str, new_status: str) -> str:
+    if DebugMode.DISABLE_AI in DEBUG_MODE:
+        return f"[DEBUG] AI disabled. Ticket '{title}' changed: '{old_status}' → '{new_status}'."
     client = anthropic.AnthropicVertex(project_id=GCP_PROJECT, region=GCP_REGION)
     prompt = (
         f"A Jira ticket titled '{title}' just changed status from '{old_status}' to '{new_status}'. "
@@ -47,6 +59,9 @@ def ask_agent(title: str, old_status: str, new_status: str) -> str:
 
 
 def post_comment(agent_response: str):
+    if DebugMode.DISABLE_JIRA in DEBUG_MODE:
+        print(f"[DEBUG] Would post comment: {agent_response}")
+        return
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{ISSUE_KEY}/comment"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
     body = json.dumps({

@@ -24,3 +24,10 @@ GCP_PROJECT_ID=your-gcp-project-id
 
 # GCP region where Claude is available (e.g. us-east5, europe-west1)
 GCP_REGION=us-east5
+
+# Debug mode — controls which external calls are active
+# PRODUCTION:   full behaviour, posts to Jira and calls Claude (default)
+# DISABLE_JIRA: print comments to console instead of posting to Jira
+# DISABLE_AI:   skip Claude call, use a hardcoded response instead
+# FULL_DISABLE: combine DISABLE_JIRA + DISABLE_AI (no external calls at all)
+DEBUG_MODE=PRODUCTION
