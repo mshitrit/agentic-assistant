@@ -33,6 +33,12 @@ GCP_PROJECT_ID=your-gcp-project-id
 # GCP region where Claude is available (e.g. us-east5, europe-west1)
 GCP_REGION=us-east5
 
+# Absolute path to a local clone of the SBR repo.
+# Used by the agent to read source files during ticket analysis (tool use).
+# Leave empty to disable repo access (agent falls back to memory only).
+# Example: SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
+SBR_REPO_PATH=
+
 # ==============================================
 # Debug
 # ==============================================

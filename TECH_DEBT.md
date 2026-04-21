@@ -52,3 +52,13 @@
 - At typical PoC volume (tens of requests/month) this is negligible; only becomes a concern above ~1,000 requests/month (~$170/month)
 
 **Priority: Low** — cost is acceptable at current scale. Revisit if request volume grows significantly.
+
+## 5. SBR Local Repo Staleness
+
+**Current approach:** `SBR_REPO_PATH` points to a manually maintained local clone of the SBR repo.
+
+**Why this is debt:**
+- The local clone can drift from the actual codebase if not kept up to date
+- A stale clone undermines the agent's ability to detect memory drift (Step 4) and provide accurate code references
+
+**Desired solution:** Automate repo sync — e.g. a periodic `git pull` via cron job, or trigger a pull at agent startup if the last sync was more than N hours ago.

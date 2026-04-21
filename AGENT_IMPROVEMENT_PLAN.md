@@ -27,23 +27,40 @@ Create a `memory/living/` directory mirroring the structure of `memory/verified/
 
 Updates happen **on the fly** during ticket analysis (not via a scheduled job): if the agent is already reading relevant SBR code and notices something has changed, it updates the corresponding living memory file as a side effect. Updates are logged so the human review has a clear audit trail.
 
-## Step 5: Give the Agent Access to the SBR Codebase
-Add `SBR_REPO_PATH` to `jira_config.txt` (and template) pointing to a local clone of the SBR repo. The agent uses this path to:
+## Step 5: SBR Repo Access — Infrastructure
+Add `SBR_REPO_PATH` to `jira_config.txt` (and template) pointing to a local clone of the SBR repo. Create `agent/tools.py` defining the file-access tools the agent can invoke:
 
-- **Verify memory against current code** — when analyzing a ticket, the agent can read relevant source files to check whether its verified/living memory is still accurate, and update living memory if it detects drift.
-- **Look up specific code in context** — if a ticket references a component, failure mode, or behavior, the agent can pull the relevant code snippet to ground its analysis.
+- `read_file(path)` — reads a file from the local SBR repo and returns its content
+- `list_directory(path)` — lists files/directories at a given path in the repo (optional, helps the agent navigate)
 
-`SBR_REPO_PATH` defaults to empty (disabled). When set, `agent/prompts.py` can optionally pass targeted file contents to `build_prompt()` based on ticket keywords.
+`SBR_REPO_PATH` defaults to empty (disabled). When unset, tool use is skipped and the agent falls back to memory-only mode.
 
-## Step 6: Human Review and Memory Alignment
+## Step 6: Living Memory Write Tool
+Add a `write_memory_file(filename, content)` tool to `agent/tools.py` that writes to `memory/living/`. This gives the agent the ability to update its living memory when it detects a discrepancy between its verified knowledge and the current codebase.
+
+- Only `memory/living/` is writable — the tool enforces this, preventing the agent from modifying verified memory or anything outside the living memory directory
+- Every write is logged to console so the human review process (Step 7) has a clear audit trail
+- Update `TOOL_DEFINITIONS` in `agent/tools.py` with the new tool's Anthropic schema
+- Update `agent/prompts.py` to instruct the agent when to update living memory: *"If you read source code that contradicts your domain knowledge, update the relevant file in living memory using `write_memory_file`. Only update what you have directly verified — do not speculate."*
+
+## Step 7: SBR Repo Access — Tool Use Wiring
+Wire all tools from Steps 5 and 6 into `agent/claude.py` using Claude's tool use (function calling) API:
+
+1. First call: send prompt + tool definitions to Claude
+2. Loop: if Claude returns a tool call → execute it locally → send result back as a tool result message
+3. Repeat until Claude returns a final text response with no further tool calls
+
+This gives the agent genuine autonomy to decide which files to read and whether to update living memory. Update `agent/prompts.py` to include `code_map.md` so the agent knows where things are in the repo.
+
+## Step 8: Human Review and Memory Alignment
 Periodically, a user reviews the diff between `memory/living/` and `memory/verified/`. If the living memory changes are correct, the user commits them into `memory/verified/`, effectively promoting agent-learned knowledge to the verified baseline.
 
-## Step 7: Improve the Prompt
+## Step 9: Improve the Prompt
 Using all of the above context, construct a role-anchored prompt:
 > "You are an SBR engineer. Given the following ticket details, verified domain knowledge, and any recent observations from living memory, provide a concise analysis and suggest next steps."
 
-## Step 8: Extract Prompt Construction to `agent/prompts.py`
+## Step 10: Extract Prompt Construction to `agent/prompts.py`
 Once the prompt grows to incorporate domain knowledge, ticket context, and code snippets, move prompt construction to a dedicated file to keep `agent/claude.py` focused on the API call only.
 
-## Step 9: Test and Iterate
+## Step 11: Test and Iterate
 Use `DEBUG_MODE=DISABLE_JIRA` to test agent responses without posting to Jira. Iterate on prompt wording and context selection based on output quality.
