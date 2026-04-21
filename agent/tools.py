@@ -1,6 +1,8 @@
 from pathlib import Path
 from config.settings import SBR_REPO_PATH
 
+LIVING_MEMORY_DIR = Path(__file__).parent.parent / "memory" / "living"
+
 
 def _repo_root() -> Path | None:
     if not SBR_REPO_PATH:
@@ -35,7 +37,17 @@ def list_directory(dir_path: str = "") -> str:
     return "\n".join(lines)
 
 
-# Tool definitions in Anthropic tool-use format (used in Step 6)
+def write_memory_file(filename: str, content: str) -> str:
+    full_path = (LIVING_MEMORY_DIR / filename).resolve()
+    if not str(full_path).startswith(str(LIVING_MEMORY_DIR.resolve())):
+        return "Error: path traversal outside living memory directory is not allowed."
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    full_path.write_text(content)
+    print(f"[MEMORY UPDATE] Living memory updated: {filename}")
+    return f"Successfully updated living memory: {filename}"
+
+
+# Tool definitions in Anthropic tool-use format (used in Step 7)
 TOOL_DEFINITIONS = [
     {
         "name": "read_file",
@@ -63,6 +75,28 @@ TOOL_DEFINITIONS = [
                 }
             },
             "required": []
+        }
+    },
+    {
+        "name": "write_memory_file",
+        "description": (
+            "Update a file in living memory when you detect that the current SBR codebase "
+            "contradicts your verified domain knowledge. Only call this after directly "
+            "verifying the discrepancy in source code — do not speculate."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "Path relative to memory/living/ (e.g. 'sbr/architecture.md')"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Full updated content for the memory file"
+                }
+            },
+            "required": ["filename", "content"]
         }
     }
 ]

@@ -27,5 +27,7 @@ class DebugMode(Flag):
     DISABLE_AI   = auto()  # skip Claude call, use a hardcoded response instead
     FULL_DISABLE = DISABLE_JIRA | DISABLE_AI
 
+MAX_READ_CALLS  = int(config.get("MAX_READ_CALLS", "10"))
+MAX_WRITE_CALLS = int(config.get("MAX_WRITE_CALLS", "3"))
 DEBUG_MODE = DebugMode[config.get("DEBUG_MODE", "PRODUCTION")]
 LOG_LEVEL  = config.get("LOG_LEVEL", "INFO").upper()

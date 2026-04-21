@@ -39,6 +39,14 @@ GCP_REGION=us-east5
 # Example: SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
 SBR_REPO_PATH=
 
+# Maximum number of SBR repo read operations (read_file + list_directory) per ticket analysis.
+# Prevents excessive file reads and cost spikes. Default: 10.
+MAX_READ_CALLS=10
+
+# Maximum number of living memory write operations per ticket analysis.
+# Kept separate so memory updates are never blocked by read budget exhaustion. Default: 3.
+MAX_WRITE_CALLS=3
+
 # ==============================================
 # Debug
 # ==============================================

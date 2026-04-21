@@ -41,6 +41,21 @@ def build_prompt(context: dict) -> str:
             parts.append(f"### {name}\n{content}")
 
     parts.append(
+        "## Tool Use Instructions\n"
+        "You have access to tools to read files from the SBR repository and update living memory. "
+        "Use them sparingly and purposefully:\n"
+        "- Only read files you have a clear, specific reason to check based on the ticket. "
+        "Do not explore the codebase speculatively.\n"
+        "- Limit yourself to 3–5 files most directly relevant to the ticket.\n"
+        "- If the verified domain knowledge already covers what you need, prefer it over reading source files.\n"
+        "- If you detect that the current codebase either contradicts the verified domain knowledge "
+        "or contains significant functionality not yet documented there, update the relevant file "
+        "in living memory using `write_memory_file`. "
+        "Include the full updated file content — not just the changed section. "
+        "Only update what you have directly verified in code. Do not speculate."
+    )
+
+    parts.append(
         "## Task\n"
         "Based on the ticket details and domain knowledge above, provide:\n"
         "1. A brief analysis of what this ticket is about (1-2 sentences)\n"
