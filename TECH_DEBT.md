@@ -62,3 +62,21 @@
 - A stale clone undermines the agent's ability to detect memory drift (Step 4) and provide accurate code references
 
 **Desired solution:** Automate repo sync — e.g. a periodic `git pull` via cron job, or trigger a pull at agent startup if the last sync was more than N hours ago.
+
+## 6. Migrate Tool Integration to MCP (Model Context Protocol)
+
+**Current approach:** Tools (`read_file`, `list_directory`, `write_memory_file`) are defined manually in `agent/tools.py` with hand-written JSON schemas, and the tool call/result loop is implemented by hand in `agent/claude.py`.
+
+**Why this is debt:**
+- Tool schemas must be kept in sync with function signatures by hand
+- The tool loop, dispatch logic, and debug logging are all custom boilerplate
+- Adding new tools requires changes in both `tools.py` and `claude.py`
+- Tools are not reusable across other agents without copy-pasting
+
+**Desired solution:** Migrate to MCP — expose tools via a dedicated MCP server and use the MCP client for tool discovery. This reduces boilerplate and makes tools reusable across agents and models.
+
+**Caveats before migrating:**
+- The current split read/write call limits (`MAX_READ_CALLS` / `MAX_WRITE_CALLS`) and per-call debug logging (`[TOOL CALL]` / `[TOOL RESULT]`) require running a hybrid loop (own loop + MCP for schema discovery) or moving limit enforcement into the MCP server itself.
+- Not worth migrating until the project has more tools or multiple agents that could share them.
+
+**Priority:** Low — current implementation works well for the current scope.
