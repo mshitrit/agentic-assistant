@@ -2,6 +2,8 @@
 
 ## 1. Replace Polling with Jira Webhook
 
+**Priority: High**
+
 **Current approach:** `main.py` polls Jira every 20 seconds to check for trigger conditions.
 
 **Why polling was chosen:** Webhook registration requires Jira admin permissions, which were not available. Polling was used as a simpler alternative sufficient for PoC purposes.
@@ -13,6 +15,8 @@
 
 ## 2. Designated Jira Account for the AI Agent
 
+**Priority: High**
+
 **Current approach:** The agent posts comments using a personal user account (configured via `JIRA_USER`/`JIRA_TOKEN`).
 
 **Why this is debt:**
@@ -22,6 +26,8 @@
 **Desired solution:** Create a dedicated Jira service account for the agent (e.g. `ai-agent@redhat.com`). This makes AI activity clearly identifiable in the audit trail and decouples the agent from any individual's account.
 
 ## 3. Comment Pagination
+
+**Priority: High**
 
 **Current approach:** Comments are fetched as part of the issue details request, which returns only the first 10 comments by default.
 
@@ -54,6 +60,8 @@
 **Priority: Low** — cost is acceptable at current scale. Revisit if request volume grows significantly.
 
 ## 5. SBR Local Repo Staleness
+
+**Priority: Medium**
 
 **Current approach:** `SBR_REPO_PATH` points to a manually maintained local clone of the SBR repo.
 
