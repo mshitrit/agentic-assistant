@@ -27,11 +27,19 @@ agentic-assistant/
 
 ## Prerequisites
 
-### 1. Python
-Required to run any script in this project.
+### 1. Python 3.10+
+Required to run any script in this project. Python 3.10 or newer is required (uses `X | Y` union type syntax).
+
+Check your version:
 ```bash
-sudo dnf install python3
+python3 --version
 ```
+
+If below 3.10, install a newer version (RHEL/Fedora):
+```bash
+sudo dnf install python3.11
+```
+Then use `python3.11` instead of `python3` for all commands below and when running the project.
 
 ### 2. Jira client library
 Required by both scripts to make HTTP calls to the Jira REST API.
@@ -48,6 +56,19 @@ pip install "anthropic[vertex]"
 ### 4. Google Cloud CLI (for `poller.py` only)
 Required to authenticate with GCP so the Claude library can access Vertex AI.
 
+Add the Google Cloud repo (required — not in default Fedora/RHEL repos):
+```bash
+sudo tee -a /etc/yum.repos.d/google-cloud-sdk.repo << EOM
+[google-cloud-cli]
+name=Google Cloud CLI
+baseurl=https://packages.cloud.google.com/yum/repos/cloud-sdk-el10-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=0
+gpgkey=https://packages.cloud.google.com/yum/doc/rpm-package-key-v10.gpg
+EOM
+```
+
 Install:
 ```bash
 sudo dnf install google-cloud-cli
@@ -55,7 +76,18 @@ sudo dnf install google-cloud-cli
 
 Authenticate (one-time):
 ```bash
-gcloud auth application-default login
+gcloud init --console-only
+```
+When prompted, enter your GCP project ID (`GCP_PROJECT_ID` from your config).
+
+Then set the quota project:
+```bash
+gcloud auth application-default set-quota-project <GCP_PROJECT_ID>
+```
+
+Verify authentication:
+```bash
+gcloud auth list
 ```
 
 > Also ensure Claude is enabled in your GCP project's [Vertex AI Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
