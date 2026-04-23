@@ -88,3 +88,21 @@
 - Not worth migrating until the project has more tools or multiple agents that could share them.
 
 **Priority:** Low — current implementation works well for the current scope.
+
+## 7. Add Automated Tests
+
+**Priority: Medium**
+
+**Current approach:** No automated tests exist. The project has been validated manually by running against real Jira tickets.
+
+**Why this is debt:**
+- No safety net for regressions when modifying prompt logic, tool wiring, or Jira client code
+- Hard to verify edge cases (e.g. comment pagination, ADF parsing, tool call limits) without a live Jira instance
+
+**Desired solution:** Add unit tests for at minimum:
+- `jira/utils.py` — ADF text extraction
+- `jira/comments.py` — comment detection and deduplication logic
+- `agent/tools.py` — path traversal guards, tool limit enforcement
+- `agent/prompts.py` — prompt structure given various memory states
+
+Use `pytest` with mocked HTTP responses (`responses` or `unittest.mock`) to avoid live API calls.
