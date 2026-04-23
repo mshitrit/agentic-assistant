@@ -15,7 +15,7 @@ GCP_PROJECT = config["GCP_PROJECT_ID"]
 GCP_REGION  = config["GCP_REGION"]
 SBR_REPO_PATH = config.get("SBR_REPO_PATH", "").strip()
 
-POLL_INTERVAL   = 20
+POLL_INTERVAL   = 60
 AI_PREFIX       = "🤖 [AI Generated]\n\n"
 TRIGGER_LABEL   = "ai-assist"
 TRIGGER_COMMENT = "/ai-assist"
