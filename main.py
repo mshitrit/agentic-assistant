@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from config.settings import ISSUE_KEY, COMPONENTS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT
+from config.settings import ISSUE_KEY, COMPONENTS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT, LOG_LEVEL
 from jira.client import fetch_issues_by_components, get_issue_details
 from jira.comments import has_ai_comment, post_comment, extract_comment_text
 from jira.utils import extract_adf_text
@@ -26,14 +26,16 @@ if __name__ == "__main__":
 
     while True:
         time.sleep(POLL_INTERVAL)
-        print(f"\n--- Poll cycle {datetime.now().strftime('%H:%M:%S')} ---")
+        print(f"\n--- Poll cycle {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---")
         for key in issue_keys:
             fields = get_issue_details(key)
             if not should_trigger(fields):
-                print(f"No trigger on {key}, skipping.")
+                if LOG_LEVEL == "DEBUG":
+                    print(f"No trigger on {key}, skipping.")
                 continue
             if has_ai_comment(fields):
-                print(f"AI comment already exists on {key}, skipping.")
+                if LOG_LEVEL == "DEBUG":
+                    print(f"AI comment already exists on {key}, skipping.")
                 continue
             title = fields["summary"]
             print(f"Trigger detected on {key}: '{title}'")
