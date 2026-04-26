@@ -1,7 +1,9 @@
 import requests
 from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID
+from jira.utils import jira_request
 
 
+@jira_request
 def fetch_issues_by_components(components: list[str]) -> list[str]:
     jql = "component in ({}) AND statusCategory != Done".format(
         ", ".join(f'"{c}"' for c in components)
@@ -13,6 +15,7 @@ def fetch_issues_by_components(components: list[str]) -> list[str]:
     return [issue["key"] for issue in response.json().get("issues", [])]
 
 
+@jira_request
 def get_issue_details(issue_key: str) -> dict:
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{issue_key}"
     headers = {"Accept": "application/json"}

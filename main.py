@@ -29,6 +29,8 @@ if __name__ == "__main__":
         print(f"\n--- Poll cycle {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---")
         for key in issue_keys:
             fields = get_issue_details(key)
+            if fields is None:
+                continue
             if not should_trigger(fields):
                 if LOG_LEVEL == "DEBUG":
                     print(f"No trigger on {key}, skipping.")
