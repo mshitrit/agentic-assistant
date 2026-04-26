@@ -27,16 +27,15 @@
 
 ## 3. Comment Pagination
 
-**Priority: High**
+**Priority: Low**
 
-**Current approach:** Comments are fetched as part of the issue details request, which returns only the first 10 comments by default.
+**Current approach:** Comments are fetched as part of the issue details request (`GET /issue/{key}?fields=comment`), which returns up to 100 comments by default — sufficient for typical ticket volumes.
 
 **Why this is debt:**
-- Trigger detection (`/ai-assist` comment) may miss the trigger if it's beyond the first 10 comments
-- AI comment deduplication check may fail on tickets with many comments
-- Agent analysis may be incomplete — comments often contain key investigation findings, workarounds, and engineer discussions that inform a meaningful response
+- Trigger detection (`/ai-assist` comment) and AI comment deduplication could silently fail on tickets with more than 100 comments
+- Agent analysis may be incomplete on very active tickets where key findings appear beyond comment 100
 
-**Desired solution:** Fetch comments via the dedicated paginated endpoint (`GET /rest/api/3/issue/{key}/comment`) to ensure all comments are checked.
+**Desired solution:** Fetch comments via the dedicated paginated endpoint (`GET /rest/api/3/issue/{key}/comment`) if this ever becomes a real concern at scale.
 
 ## 4. Prompt Size / Claude Cost Optimization
 
@@ -106,3 +105,15 @@
 - `agent/prompts.py` — prompt structure given various memory states
 
 Use `pytest` with mocked HTTP responses (`responses` or `unittest.mock`) to avoid live API calls.
+
+## 8. Jira Comment Formatting
+
+**Priority: Low**
+
+**Current approach:** The agent's response is posted as plain text, so Markdown syntax (e.g. `**bold**`, `## headers`, ` ``` code blocks`) appears literally in Jira instead of being rendered.
+
+**Why this is debt:**
+- Comments are harder to read — formatting intended to aid clarity is shown as raw symbols
+- Jira uses Atlassian Document Format (ADF) for rich text, not Markdown
+
+**Desired solution:** Convert the agent's Markdown response to ADF before posting. A lightweight conversion (headers → ADF headings, bold → ADF strong, bullet lists → ADF bullet lists) in `jira/comments.py` would cover the most common cases. Libraries like `markdown-it-py` or a custom converter could be used.
