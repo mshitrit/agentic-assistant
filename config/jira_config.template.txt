@@ -66,3 +66,15 @@ LOG_LEVEL=INFO
 # DISABLE_AI:   skip Claude call, use a hardcoded response instead
 # FULL_DISABLE: combine DISABLE_JIRA + DISABLE_AI (no external calls at all)
 DEBUG_MODE=PRODUCTION
+
+# ==============================================
+# Slack
+# ==============================================
+
+# Bot token for posting messages (xoxb-...)
+# Found under OAuth & Permissions in your Slack app settings
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+
+# App-level token for Socket Mode connection (xapp-...)
+# Found under Settings → Socket Mode in your Slack app settings
+SLACK_APP_TOKEN=xapp-your-app-token

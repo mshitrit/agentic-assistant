@@ -31,3 +31,5 @@ MAX_READ_CALLS  = int(config.get("MAX_READ_CALLS", "10"))
 MAX_WRITE_CALLS = int(config.get("MAX_WRITE_CALLS", "3"))
 DEBUG_MODE = DebugMode[config.get("DEBUG_MODE", "PRODUCTION")]
 LOG_LEVEL  = config.get("LOG_LEVEL", "INFO").upper()
+SLACK_BOT_TOKEN = config.get("SLACK_BOT_TOKEN", "")
+SLACK_APP_TOKEN = config.get("SLACK_APP_TOKEN", "")
