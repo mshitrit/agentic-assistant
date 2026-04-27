@@ -117,3 +117,23 @@ Use `pytest` with mocked HTTP responses (`responses` or `unittest.mock`) to avoi
 - Jira uses Atlassian Document Format (ADF) for rich text, not Markdown
 
 **Desired solution:** Convert the agent's Markdown response to ADF before posting. A lightweight conversion (headers → ADF headings, bold → ADF strong, bullet lists → ADF bullet lists) in `jira/comments.py` would cover the most common cases. Libraries like `markdown-it-py` or a custom converter could be used.
+
+## 9. Security & Compliance Review
+
+**Priority: Blocker**
+
+**Why this is a blocker:**
+Before this project is used beyond personal PoC scope (shared with a team, run against real production tickets, or expanded to Slack), the following questions must be answered:
+
+**1. Red Hat AI Tool Approval Process**
+- Does this qualify as a new internal AI tool requiring formal approval through Red Hat's AI governance pipeline?
+- Red Hat has processes for reviewing AI-assisted tools used internally — this project may need to go through that process before broader use.
+
+**2. Privacy & Data Classification**
+- Jira tickets, comments, and descriptions may contain Red Hat-confidential or customer-sensitive information.
+- This data is currently passed to Claude via GCP Vertex AI. It must be confirmed that:
+  - This is compliant with Red Hat's data classification policy
+  - GCP Vertex AI is an approved data processor for this class of data
+  - Internal-only Jira comments are not inadvertently exposed to the AI
+
+**Desired solution:** Raise both questions with the appropriate Red Hat legal/security/AI governance team before expanding scope. Document the outcome here.
