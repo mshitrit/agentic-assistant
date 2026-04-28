@@ -50,7 +50,10 @@ if __name__ == "__main__":
                 "assignee":    (fields.get("assignee") or {}).get("displayName"),
                 "components":  [c["name"] for c in fields.get("components", [])],
             }
-            agent_response = ask_agent(context)
-            print(f"Agent response: {agent_response}")
-            post_comment(key, agent_response)
+            agent_result = ask_agent(context)
+            if not agent_result.ok:
+                print(f"[ERROR] Agent failed on {key}: {agent_result.error}, skipping comment.")
+                continue
+            print(f"Agent response: {agent_result.response}")
+            post_comment(key, agent_result.response)
         print("--- End of cycle ---")

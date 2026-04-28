@@ -13,6 +13,11 @@ _DISCLAIMER = (
     "Analysing your question, please wait..."
 )
 
+_ERROR_MESSAGES = {
+    "rate_limit": ":warning: I'm temporarily unavailable due to high demand. Please try again in a moment.",
+    "api_error":  ":warning: I encountered an error and couldn't process your request. Please try again later.",
+}
+
 
 @app.event("app_mention")
 def handle_mention(event, say, client):
@@ -37,8 +42,11 @@ def handle_mention(event, say, client):
         mode = AgentMode.SLACK
         say(_DISCLAIMER, thread_ts=ts)
 
-    response = ask_agent(context, mode=mode)
-    say(response, thread_ts=ts)
+    result = ask_agent(context, mode=mode)
+    if not result.ok:
+        say(_ERROR_MESSAGES.get(result.error, _ERROR_MESSAGES["api_error"]), thread_ts=ts)
+    else:
+        say(result.response, thread_ts=ts)
 
 
 if __name__ == "__main__":
