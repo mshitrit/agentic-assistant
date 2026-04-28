@@ -7,8 +7,9 @@ LIVING_DIR   = MEMORY_BASE / "living"
 
 
 class AgentMode(Enum):
-    JIRA  = "jira"
-    SLACK = "slack"
+    JIRA         = "jira"
+    SLACK        = "slack"
+    SLACK_THREAD = "slack_thread"
 
 
 def _load_md_files(directory: Path) -> dict[str, str]:
@@ -105,7 +106,41 @@ def build_slack_prompt(question: str) -> str:
     return "\n\n".join(parts)
 
 
+def build_slack_thread_prompt(thread_history: str) -> str:
+    verified = _load_md_files(VERIFIED_DIR)
+    living   = _load_md_files(LIVING_DIR)
+    living_updates = {k: v for k, v in living.items() if v != verified.get(k, "")}
+
+    parts = [
+        "You are an experienced SBR (Storage-Based Remediation) engineer continuing a conversation "
+        "in Slack. The thread history below shows what has already been discussed. "
+        "Answer the latest question in context of the prior exchange. "
+        "Be concise and do not repeat what was already covered. "
+        "Format your response using Slack markup: "
+        "*bold* for emphasis, `code` for commands or field names, plain bullet points with - for lists. "
+        "Do not use Markdown headers (##) or double asterisks (**). "
+        "Do not add a disclaimer at the end.",
+        f"*Thread history:*\n{thread_history}",
+    ]
+
+    if verified:
+        parts.append("## Verified Domain Knowledge")
+        for name, content in verified.items():
+            parts.append(f"### {name}\n{content}")
+
+    if living_updates:
+        parts.append("## Recent Agent Observations (Living Memory Updates)")
+        for name, content in living_updates.items():
+            parts.append(f"### {name}\n{content}")
+
+    parts.append(_TOOL_USE_INSTRUCTIONS)
+
+    return "\n\n".join(parts)
+
+
 def build_prompt(context: dict, mode: AgentMode = AgentMode.JIRA) -> str:
+    if mode == AgentMode.SLACK_THREAD:
+        return build_slack_thread_prompt(context.get("title", ""))
     if mode == AgentMode.SLACK:
         return build_slack_prompt(context.get("title", ""))
     return build_jira_prompt(context)
