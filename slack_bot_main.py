@@ -3,22 +3,9 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
 from agent.claude import ask_agent
 from agent.prompts import AgentMode
+from slack.client import get_bot_user_id, get_thread_history
 
 app = App(token=SLACK_BOT_TOKEN)
-
-
-def _get_thread_history(client, channel: str, thread_ts: str, bot_user_id: str) -> str:
-    result = client.conversations_replies(channel=channel, ts=thread_ts)
-    messages = result.get("messages", [])
-    lines = []
-    for msg in messages:
-        user = msg.get("user", "unknown")
-        text = msg.get("text", "").strip()
-        if not text:
-            continue
-        role = "Assistant" if user == bot_user_id else "User"
-        lines.append(f"{role}: {text}")
-    return "\n".join(lines)
 
 
 @app.event("app_mention")
@@ -30,8 +17,8 @@ def handle_mention(event, say, client):
     is_thread_reply = bool(thread_ts and thread_ts != ts)
 
     if is_thread_reply:
-        bot_user_id = client.auth_test()["user_id"]
-        thread_history = _get_thread_history(client, channel, thread_ts, bot_user_id)
+        bot_user_id = get_bot_user_id(client)
+        thread_history = get_thread_history(client, channel, thread_ts, bot_user_id)
         context = {"title": thread_history}
         mode = AgentMode.SLACK_THREAD
     else:
