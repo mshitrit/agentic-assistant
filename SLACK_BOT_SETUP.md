@@ -16,8 +16,12 @@ This guide walks through creating and configuring the Slack app required to run 
 ## 3. Add Bot Token Scopes
 
 Go to **OAuth & Permissions → Bot Token Scopes** and add:
-- `app_mentions:read`
-- `chat:write`
+- `app_mentions:read` — receive `@mention` events
+- `chat:write` — post replies
+- `channels:history` — read thread history in public channels
+- `groups:history` — read thread history in private channels the bot is invited to
+- `mpim:history` — read thread history in multi-person DMs (if the bot is added to a group DM)
+- `im:history` — read thread history in 1:1 DMs with the bot
 
 > Make sure these are under **Bot Token Scopes**, not User Token Scopes.
 
