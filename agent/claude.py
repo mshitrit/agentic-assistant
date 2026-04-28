@@ -1,6 +1,6 @@
 import anthropic
 from config.settings import GCP_PROJECT, GCP_REGION, DEBUG_MODE, DebugMode, LOG_LEVEL, MAX_READ_CALLS, MAX_WRITE_CALLS, SBR_REPO_PATH
-from agent.prompts import build_prompt
+from agent.prompts import build_prompt, AgentMode
 from agent.tools import TOOL_DEFINITIONS, read_file, list_directory, write_memory_file
 
 READ_TOOLS  = {"read_file", "list_directory"}
@@ -13,12 +13,12 @@ TOOL_FUNCTIONS = {
 }
 
 
-def ask_agent(context: dict) -> str:
+def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA) -> str:
     if DebugMode.DISABLE_AI in DEBUG_MODE:
         return f"[DEBUG] AI disabled. Ticket '{context.get('title')}' requested AI analysis."
 
     client = anthropic.AnthropicVertex(project_id=GCP_PROJECT, region=GCP_REGION)
-    prompt = build_prompt(context)
+    prompt = build_prompt(context, mode)
 
     if LOG_LEVEL == "DEBUG":
         print(f"\n--- Agent Prompt ---\n{prompt}\n--- End Prompt ---\n")

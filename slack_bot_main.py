@@ -2,6 +2,7 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
 from agent.claude import ask_agent
+from agent.prompts import AgentMode
 
 app = App(token=SLACK_BOT_TOKEN)
 
@@ -18,7 +19,7 @@ def handle_mention(event, say):
     say("Analysing your question, please wait...", thread_ts=event["ts"])
 
     context = {"title": question}
-    response = ask_agent(context)
+    response = ask_agent(context, mode=AgentMode.SLACK)
     say(response, thread_ts=event["ts"])
 
 

@@ -118,6 +118,19 @@ Use `pytest` with mocked HTTP responses (`responses` or `unittest.mock`) to avoi
 
 **Desired solution:** Convert the agent's Markdown response to ADF before posting. A lightweight conversion (headers → ADF headings, bold → ADF strong, bullet lists → ADF bullet lists) in `jira/comments.py` would cover the most common cases. Libraries like `markdown-it-py` or a custom converter could be used.
 
+## 10. Living Memory Concurrent Write Safety
+
+**Priority: Medium**
+
+**Problem:**
+When both the Jira poller (`main.py`) and the Slack bot (`slack_bot_main.py`) are running simultaneously, both agents can invoke `write_memory_file` at the same time. The current implementation uses a plain `Path.write_text()` with no file locking or atomicity guarantees, which can lead to:
+- **Concurrent overwrites:** the last writer silently discards the other's content.
+- **Torn reads:** a prompt-building call reading a memory file mid-write may see partial content.
+
+**Desired solution:** Use atomic writes (`os.replace` on a temp file, which is atomic on Linux) to eliminate torn reads, and optionally add `fcntl.flock`-based file locking to serialise concurrent writers. Alternatively, restrict memory writes to a single process (e.g. only the Jira poller writes; the Slack bot is read-only).
+
+---
+
 ## 9. Security & Compliance Review
 
 **Priority: Blocker**
