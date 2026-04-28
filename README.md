@@ -14,7 +14,8 @@ agentic-assistant/
 │   └── comments.py               # post, check and parse Jira comments
 ├── agent/
 │   └── claude.py                 # Claude AI via Vertex AI
-├── main.py                       # main loop and trigger detection
+├── main.py                       # Jira poller entry point
+├── slack_bot_main.py             # Slack bot entry point
 └── jira_connectivity_test.py     # one-shot connectivity and write access test
 ```
 
@@ -24,7 +25,7 @@ agentic-assistant/
 |---|---|
 | `jira_connectivity_test.py` | One-shot test to verify Jira credentials and write access |
 | `main.py` | Polls tracked Jira tickets every 20s and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
-| `slack/slack_bot.py` | Listens for `@mentions` in Slack and responds with AI-generated answers using the same domain knowledge as the Jira agent |
+| `slack_bot_main.py` | Listens for `@mentions` in Slack and responds with AI-generated answers using the same domain knowledge as the Jira agent (see [Slack Bot Setup](SLACK_BOT_SETUP.md)) |
 
 ## Prerequisites
 
@@ -93,7 +94,7 @@ gcloud auth list
 
 > Also ensure Claude is enabled in your GCP project's [Vertex AI Model Garden](https://console.cloud.google.com/vertex-ai/model-garden)
 
-### 5. Slack bot library (for `slack/slack_bot.py` only)
+### 5. Slack bot library (for `slack_bot_main.py` only)
 Required to connect to Slack via Socket Mode.
 ```bash
 python3.11 -m pip install slack_bolt
@@ -160,6 +161,6 @@ python main.py
 
 **Start the Slack bot:**
 ```bash
-python3.11 slack/slack_bot.py
+python3.11 slack_bot_main.py
 ```
 Then mention the bot in your Slack channel: `@sbr-assistant how does detectOnlyMode work?`
