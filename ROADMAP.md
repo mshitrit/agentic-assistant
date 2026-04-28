@@ -18,3 +18,17 @@
 **Approval flow (TBD):**
 - Dev reviews the draft and either approves (posts publicly), discards, or edits before posting
 - Approval mechanism could be a Jira comment reply, a Slack reaction, or a simple CLI command
+
+---
+
+## 2. Slack Consent Flow Before AI Analysis
+
+**Summary:** Before triggering any AI analysis, the bot sends a disclaimer message with Confirm / Cancel buttons, ensuring users are aware they are interacting with an AI and do not share sensitive information unintentionally.
+
+**Motivation:** Users may not realise their message is being passed to an external AI service. An explicit confirmation step improves transparency and reduces the risk of accidental data disclosure.
+
+**Implementation notes:**
+- Use Slack Block Kit interactive buttons (`confirm_analysis` / `cancel_analysis` action IDs)
+- Encode the question in the button `value` field to avoid server-side state (2000 char limit applies)
+- Enable **Interactivity** in the Slack app settings (no additional OAuth scopes needed — Socket Mode handles callbacks)
+- Skip the confirmation step for thread follow-ups where the user has already confirmed once

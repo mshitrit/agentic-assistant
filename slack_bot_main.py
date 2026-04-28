@@ -7,6 +7,12 @@ from slack.client import get_bot_user_id, get_thread_history
 
 app = App(token=SLACK_BOT_TOKEN)
 
+_DISCLAIMER = (
+    ":warning: *AI Disclaimer:* I am an AI assistant. "
+    "Please do not share sensitive or confidential information. "
+    "Analysing your question, please wait..."
+)
+
 
 @app.event("app_mention")
 def handle_mention(event, say, client):
@@ -21,6 +27,7 @@ def handle_mention(event, say, client):
         thread_history = get_thread_history(client, channel, thread_ts, bot_user_id)
         context = {"title": thread_history}
         mode = AgentMode.SLACK_THREAD
+        say("Analysing your question, please wait...", thread_ts=ts)
     else:
         question = event["text"].split(">", 1)[-1].strip()
         if not question:
@@ -28,8 +35,8 @@ def handle_mention(event, say, client):
             return
         context = {"title": question}
         mode = AgentMode.SLACK
+        say(_DISCLAIMER, thread_ts=ts)
 
-    say("Analysing your question, please wait...", thread_ts=ts)
     response = ask_agent(context, mode=mode)
     say(response, thread_ts=ts)
 
