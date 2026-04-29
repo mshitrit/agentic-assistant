@@ -5,6 +5,7 @@ from jira.client import fetch_issues_by_components, get_issue_details
 from jira.comments import has_ai_comment, post_comment, extract_comment_text
 from jira.utils import extract_adf_text
 from agent.claude import ask_agent
+from telemetry.metrics import jira_metrics
 
 
 def should_trigger(fields: dict) -> bool:
@@ -52,8 +53,10 @@ if __name__ == "__main__":
             }
             agent_result = ask_agent(context)
             if not agent_result.ok:
+                jira_metrics.inc_errors()
                 print(f"[ERROR] Agent failed on {key}: {agent_result.error}, skipping comment.")
                 continue
             print(f"Agent response: {agent_result.response}")
             post_comment(key, agent_result.response)
+            jira_metrics.inc_analyses_posted()
         print("--- End of cycle ---")

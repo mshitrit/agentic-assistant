@@ -4,6 +4,7 @@ from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
 from agent.claude import ask_agent
 from agent.prompts import AgentMode
 from slack.client import get_bot_user_id, get_thread_history
+from telemetry.metrics import slack_metrics
 
 app = App(token=SLACK_BOT_TOKEN)
 
@@ -32,6 +33,7 @@ def handle_mention(event, say, client):
         thread_history = get_thread_history(client, channel, thread_ts, bot_user_id)
         context = {"title": thread_history}
         mode = AgentMode.SLACK_THREAD
+        slack_metrics.inc_followups()
         say("Analysing your question, please wait...", thread_ts=ts)
     else:
         question = event["text"].split(">", 1)[-1].strip()
@@ -40,12 +42,15 @@ def handle_mention(event, say, client):
             return
         context = {"title": question}
         mode = AgentMode.SLACK
+        slack_metrics.inc_threads_started()
         say(_DISCLAIMER, thread_ts=ts)
 
     result = ask_agent(context, mode=mode)
     if not result.ok:
+        slack_metrics.inc_errors()
         say(_ERROR_MESSAGES.get(result.error, _ERROR_MESSAGES["api_error"]), thread_ts=ts)
     else:
+        slack_metrics.inc_success()
         say(result.response, thread_ts=ts)
 
 
