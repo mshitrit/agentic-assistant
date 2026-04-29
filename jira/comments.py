@@ -1,6 +1,6 @@
 import json
 import requests
-from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID, AI_PREFIX, DEBUG_MODE, DebugMode
+from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID, AI_PREFIX, DEBUG_MODE, DebugMode, JIRA_INTERNAL_ROLE
 from jira.utils import extract_adf_text, jira_request
 
 
@@ -9,6 +9,7 @@ def extract_comment_text(comment: dict) -> str:
 
 
 def has_ai_comment(fields: dict) -> bool:
+    # Checks all comments including internal ones — safe since this data is never sent to the AI
     comments = fields.get("comment", {}).get("comments", [])
     return any(AI_PREFIX in extract_comment_text(c) for c in comments)
 
@@ -22,24 +23,23 @@ def post_comment(issue_key: str, agent_response: str):
     full_comment = AI_PREFIX + agent_response + disclaimer
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{issue_key}/comment"
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
-    body = json.dumps({
+
+    body_dict = {
         "body": {
             "type": "doc",
             "version": 1,
             "content": [
                 {
                     "type": "paragraph",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": full_comment
-                        }
-                    ]
+                    "content": [{"type": "text", "text": full_comment}]
                 }
             ]
         }
-    })
-    response = requests.post(url, data=body, headers=headers, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
+    }
+    if JIRA_INTERNAL_ROLE:
+        body_dict["visibility"] = {"type": "role", "value": JIRA_INTERNAL_ROLE}
+
+    response = requests.post(url, data=json.dumps(body_dict), headers=headers, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     if response.status_code == 201:
         print(f"Comment posted successfully on {issue_key}.")
     else:

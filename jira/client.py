@@ -3,10 +3,16 @@ from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID
 from jira.utils import jira_request
 
 
+def _is_public_comment(comment: dict) -> bool:
+    return comment.get("visibility") is None
+
+
 @jira_request
 def fetch_issues_by_components(components: list[str]) -> list[str]:
-    jql = "component in ({}) AND statusCategory != Done".format(
-        ", ".join(f'"{c}"' for c in components)
+    jql = (
+        "component in ({}) AND statusCategory != Done AND level is EMPTY".format(
+            ", ".join(f'"{c}"' for c in components)
+        )
     )
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/search/jql"
     headers = {"Accept": "application/json"}
@@ -22,4 +28,8 @@ def get_issue_details(issue_key: str) -> dict:
     params = {"fields": "summary,labels,comment,description,status,priority,assignee,issuetype,components"}
     response = requests.get(url, headers=headers, params=params, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     response.raise_for_status()
-    return response.json()["fields"]
+    fields = response.json()["fields"]
+    # Strip internal comments before returning — never pass restricted content to the AI
+    all_comments = fields.get("comment", {}).get("comments", [])
+    fields["comment"]["comments"] = [c for c in all_comments if _is_public_comment(c)]
+    return fields

@@ -14,6 +14,7 @@ COMPONENTS  = [c.strip() for c in config.get("COMPONENTS", "").split(",") if c.s
 GCP_PROJECT = config["GCP_PROJECT_ID"]
 GCP_REGION  = config["GCP_REGION"]
 SBR_REPO_PATH = config.get("SBR_REPO_PATH", "").strip()
+JIRA_INTERNAL_ROLE = config.get("JIRA_INTERNAL_ROLE", "").strip()
 
 POLL_INTERVAL   = 60
 AI_PREFIX       = "🤖 [AI Generated]\n\n"
