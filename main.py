@@ -72,3 +72,4 @@ if __name__ == "__main__":
             post_comment(key, agent_result.response)
             jira_metrics.inc_analyses_posted()
         print("--- End of cycle ---")
+        jira_metrics._print()
