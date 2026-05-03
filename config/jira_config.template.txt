@@ -15,14 +15,6 @@ JIRA_TOKEN=your_api_token
 # Look for the "id" field corresponding to "redhat.atlassian.net"
 CLOUD_ID=your-cloud-id
 
-# Role name used to restrict visibility of AI-generated comments to internal users only.
-# Also used to filter out internal comments before passing ticket data to the AI.
-# To find the exact role name for your project:
-#   curl -u "your-email:your_token" \
-#     "https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/project/{PROJECT_KEY}/role"
-# Common values: "Red Hat Employee", "Service Desk Team"
-JIRA_INTERNAL_ROLE=Red Hat Employee
-
 # Comma-separated list of Jira components to watch.
 # All open tickets belonging to any listed component will be tracked.
 # Ignored if ISSUE_KEY is set in the Debug section.

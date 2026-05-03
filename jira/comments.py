@@ -1,6 +1,6 @@
 import json
 import requests
-from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID, AI_PREFIX, DEBUG_MODE, DebugMode, JIRA_INTERNAL_ROLE
+from config.settings import JIRA_USER, JIRA_TOKEN, CLOUD_ID, AI_PREFIX, DEBUG_MODE, DebugMode
 from jira.utils import extract_adf_text, jira_request
 
 
@@ -36,8 +36,7 @@ def post_comment(issue_key: str, agent_response: str):
             ]
         }
     }
-    if JIRA_INTERNAL_ROLE:
-        body_dict["visibility"] = {"type": "role", "value": JIRA_INTERNAL_ROLE}
+    body_dict["visibility"] = {"type": "group", "value": "Red Hat Employee"}
 
     response = requests.post(url, data=json.dumps(body_dict), headers=headers, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     if response.status_code == 201:
