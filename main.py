@@ -15,6 +15,16 @@ def should_trigger(fields: dict) -> bool:
     return has_label or has_trigger_comment
 
 
+def _format_comments(comments: list) -> str:
+    lines = []
+    for i, c in enumerate(comments, 1):
+        author = (c.get("author") or {}).get("displayName", "Unknown")
+        text = extract_comment_text(c).strip()
+        if text:
+            lines.append(f"Comment {i} ({author}): {text}")
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     if ISSUE_KEY:
         issue_keys = [ISSUE_KEY]
@@ -42,6 +52,7 @@ if __name__ == "__main__":
                 continue
             title = fields["summary"]
             print(f"Trigger detected on {key}: '{title}'")
+            public_comments = fields.get("comment", {}).get("public_comments", [])
             context = {
                 "title":       fields.get("summary"),
                 "description": extract_adf_text(fields.get("description") or {}),
@@ -50,6 +61,7 @@ if __name__ == "__main__":
                 "issue_type":  fields.get("issuetype", {}).get("name"),
                 "assignee":    (fields.get("assignee") or {}).get("displayName"),
                 "components":  [c["name"] for c in fields.get("components", [])],
+                "comments":    _format_comments(public_comments),
             }
             agent_result = ask_agent(context)
             if not agent_result.ok:

@@ -29,7 +29,7 @@ def get_issue_details(issue_key: str) -> dict:
     response = requests.get(url, headers=headers, params=params, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     response.raise_for_status()
     fields = response.json()["fields"]
-    # Strip internal comments before returning — never pass restricted content to the AI
     all_comments = fields.get("comment", {}).get("comments", [])
-    fields["comment"]["comments"] = [c for c in all_comments if _is_public_comment(c)]
+    fields["comment"]["comments"] = all_comments
+    fields["comment"]["public_comments"] = [c for c in all_comments if _is_public_comment(c)]
     return fields
