@@ -10,7 +10,7 @@ def _is_public_comment(comment: dict) -> bool:
 @jira_request
 def fetch_issues_by_components(components: list[str]) -> list[str]:
     jql = (
-        "component in ({}) AND statusCategory != Done AND level is EMPTY".format(
+        "component in ({}) AND statusCategory != Done".format(
             ", ".join(f'"{c}"' for c in components)
         )
     )
