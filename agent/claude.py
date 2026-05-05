@@ -1,7 +1,7 @@
 import anthropic
 from dataclasses import dataclass
 from typing import Optional
-from config.settings import GCP_PROJECT, GCP_REGION, DEBUG_MODE, DebugMode, LOG_LEVEL, MAX_READ_CALLS, MAX_WRITE_CALLS, SBR_REPO_PATH
+from config.settings import GCP_PROJECT, GCP_REGION, DEBUG_MODE, DebugMode, LOG_LEVEL, MAX_READ_CALLS, MAX_WRITE_CALLS
 from agent.prompts import build_prompt, AgentMode
 from agent.tools import TOOL_DEFINITIONS, read_file, list_directory, write_memory_file
 
@@ -25,7 +25,7 @@ class AgentResult:
         return self.error is None
 
 
-def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA) -> AgentResult:
+def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA, repo_path: str = "") -> AgentResult:
     if DebugMode.DISABLE_AI in DEBUG_MODE:
         return AgentResult(response=f"[DEBUG] AI disabled. Ticket '{context.get('title')}' requested AI analysis.")
 
@@ -37,7 +37,7 @@ def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA) -> AgentResult:
             print(f"\n--- Agent Prompt ---\n{prompt}\n--- End Prompt ---\n")
 
         messages = [{"role": "user", "content": prompt}]
-        tools = TOOL_DEFINITIONS if SBR_REPO_PATH else []
+        tools = TOOL_DEFINITIONS if repo_path else []
         read_count  = 0
         write_count = 0
 
@@ -74,7 +74,8 @@ def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA) -> AgentResult:
                     else:
                         if LOG_LEVEL == "DEBUG":
                             print(f"[TOOL CALL] {block.name}({block.input})")
-                        result = fn(**block.input)
+                        extra = {"repo_path": repo_path} if block.name in READ_TOOLS else {}
+                        result = fn(**block.input, **extra)
                         if LOG_LEVEL == "DEBUG":
                             print(f"[TOOL RESULT] {result[:200]}{'...' if len(result) > 200 else ''}")
                         if is_read:

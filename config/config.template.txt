@@ -15,11 +15,24 @@ JIRA_TOKEN=your_api_token
 # Look for the "id" field corresponding to "redhat.atlassian.net"
 CLOUD_ID=your-cloud-id
 
-# Comma-separated list of Jira components to watch.
-# All open tickets belonging to any listed component will be tracked.
-# Ignored if ISSUE_KEY is set in the Debug section.
-# Example: COMPONENTS=Storage-based Remediation,Networking
-COMPONENTS=ComponentA,ComponentB
+# ==============================================
+# Operators
+# ==============================================
+
+# Each operator is defined by a Jira component list and an optional local repo path.
+# Add one block per operator using the pattern below.
+# The KEY (e.g. SBR, FAR) must match the subdirectory name under memory/verified/ and memory/living/
+#
+# OPERATOR_{KEY}_COMPONENTS: comma-separated Jira component names to watch
+# OPERATOR_{KEY}_REPO_PATH:  absolute path to a local clone of the operator repo
+#                            (leave empty to disable repo access for that operator)
+
+OPERATOR_SBR_COMPONENTS=Storage-based Remediation
+OPERATOR_SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
+
+# Example for a second operator:
+# OPERATOR_FAR_COMPONENTS=Fence Agents Remediation
+# OPERATOR_FAR_REPO_PATH=/home/user/gitRepos/medik8s/fence-agents-remediation
 
 # ==============================================
 # AI
@@ -33,13 +46,7 @@ GCP_PROJECT_ID=your-gcp-project-id
 # GCP region where Claude is available (e.g.global, us-east5, europe-west1)
 GCP_REGION=global
 
-# Absolute path to a local clone of the SBR repo.
-# Used by the agent to read source files during ticket analysis (tool use).
-# Leave empty to disable repo access (agent falls back to memory only).
-# Example: SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
-SBR_REPO_PATH=
-
-# Maximum number of SBR repo read operations (read_file + list_directory) per ticket analysis.
+# Maximum number of operator repo read operations (read_file + list_directory) per ticket analysis.
 # Prevents excessive file reads and cost spikes. Default: 10.
 MAX_READ_CALLS=10
 
@@ -51,8 +58,8 @@ MAX_WRITE_CALLS=3
 # Debug
 # ==============================================
 
-# Track a specific ticket — takes priority over COMPONENTS if set (e.g. PROJ-123)
-# Leave empty or remove to use COMPONENTS instead
+# Track a specific ticket — takes priority over operator components if set (e.g. PROJ-123)
+# Leave empty or remove to use operator components instead
 ISSUE_KEY=PROJ-123
 
 # Log level — controls verbosity of console output

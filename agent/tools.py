@@ -1,20 +1,19 @@
 from pathlib import Path
-from config.settings import SBR_REPO_PATH
 
 LIVING_MEMORY_DIR = Path(__file__).parent.parent / "memory" / "living"
 
 
-def _repo_root() -> Path | None:
-    if not SBR_REPO_PATH:
+def _resolve_repo_root(repo_path: str) -> Path | None:
+    if not repo_path:
         return None
-    path = Path(SBR_REPO_PATH)
+    path = Path(repo_path)
     return path if path.is_dir() else None
 
 
-def read_file(file_path: str) -> str:
-    root = _repo_root()
+def read_file(file_path: str, repo_path: str = "") -> str:
+    root = _resolve_repo_root(repo_path)
     if root is None:
-        return "Error: SBR_REPO_PATH is not configured or does not exist."
+        return "Error: repo path is not configured or does not exist."
     full_path = (root / file_path).resolve()
     if not str(full_path).startswith(str(root)):
         return "Error: path traversal outside repo root is not allowed."
@@ -23,10 +22,10 @@ def read_file(file_path: str) -> str:
     return full_path.read_text()
 
 
-def list_directory(dir_path: str = "") -> str:
-    root = _repo_root()
+def list_directory(dir_path: str = "", repo_path: str = "") -> str:
+    root = _resolve_repo_root(repo_path)
     if root is None:
-        return "Error: SBR_REPO_PATH is not configured or does not exist."
+        return "Error: repo path is not configured or does not exist."
     full_path = (root / dir_path).resolve()
     if not str(full_path).startswith(str(root)):
         return "Error: path traversal outside repo root is not allowed."
@@ -47,17 +46,16 @@ def write_memory_file(filename: str, content: str) -> str:
     return f"Successfully updated living memory: {filename}"
 
 
-# Tool definitions in Anthropic tool-use format (used in Step 7)
 TOOL_DEFINITIONS = [
     {
         "name": "read_file",
-        "description": "Read the contents of a file from the SBR repository.",
+        "description": "Read the contents of a file from the operator repository.",
         "input_schema": {
             "type": "object",
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "Path to the file relative to the repo root (e.g. 'cmd/sbr-agent/main.go')"
+                    "description": "Path to the file relative to the repo root (e.g. 'cmd/agent/main.go')"
                 }
             },
             "required": ["file_path"]
@@ -65,7 +63,7 @@ TOOL_DEFINITIONS = [
     },
     {
         "name": "list_directory",
-        "description": "List files and subdirectories in a directory of the SBR repository.",
+        "description": "List files and subdirectories in a directory of the operator repository.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -80,7 +78,7 @@ TOOL_DEFINITIONS = [
     {
         "name": "write_memory_file",
         "description": (
-            "Update a file in living memory when you detect that the current SBR codebase "
+            "Update a file in living memory when you detect that the current operator codebase "
             "contradicts your verified domain knowledge. Only call this after directly "
             "verifying the discrepancy in source code — do not speculate."
         ),

@@ -1,3 +1,4 @@
+import re
 from enum import Flag, auto
 
 config = {}
@@ -10,10 +11,20 @@ JIRA_USER   = config["JIRA_USER"]
 JIRA_TOKEN  = config["JIRA_TOKEN"]
 CLOUD_ID    = config["CLOUD_ID"]
 ISSUE_KEY   = config.get("ISSUE_KEY", "").strip()
-COMPONENTS  = [c.strip() for c in config.get("COMPONENTS", "").split(",") if c.strip()]
 GCP_PROJECT = config["GCP_PROJECT_ID"]
 GCP_REGION  = config["GCP_REGION"]
-SBR_REPO_PATH = config.get("SBR_REPO_PATH", "").strip()
+
+OPERATORS: dict[str, dict] = {}
+for _k, _v in config.items():
+    _m = re.match(r"^OPERATOR_(\w+)_COMPONENTS$", _k)
+    if _m:
+        _op = _m.group(1).lower()
+        OPERATORS.setdefault(_op, {})["components"] = [c.strip() for c in _v.split(",") if c.strip()]
+for _k, _v in config.items():
+    _m = re.match(r"^OPERATOR_(\w+)_REPO_PATH$", _k)
+    if _m:
+        _op = _m.group(1).lower()
+        OPERATORS.setdefault(_op, {})["repo_path"] = _v.strip()
 
 POLL_INTERVAL   = 60
 AI_PREFIX       = "🤖 [AI Generated]\n\n"

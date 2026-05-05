@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from config.settings import ISSUE_KEY, COMPONENTS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT, LOG_LEVEL
+from config.settings import ISSUE_KEY, OPERATORS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT, LOG_LEVEL
 from jira.client import fetch_issues_by_components, get_issue_details
 from jira.comments import has_ai_comment, post_comment, extract_comment_text
 from jira.utils import extract_adf_text
@@ -30,8 +30,9 @@ if __name__ == "__main__":
         issue_keys = [ISSUE_KEY]
         print(f"Tracking specific ticket: {ISSUE_KEY}")
     else:
-        issue_keys = fetch_issues_by_components(COMPONENTS)
-        print(f"Tracking {len(issue_keys)} tickets from components: {COMPONENTS}")
+        all_components = [c for op in OPERATORS.values() for c in op.get("components", [])]
+        issue_keys = fetch_issues_by_components(all_components)
+        print(f"Tracking {len(issue_keys)} tickets from operators: {list(OPERATORS.keys())}")
 
     print(f"Polling every {POLL_INTERVAL}s...")
 
@@ -63,7 +64,13 @@ if __name__ == "__main__":
                 "components":  [c["name"] for c in fields.get("components", [])],
                 "comments":    _format_comments(public_comments),
             }
-            agent_result = ask_agent(context)
+            ticket_components = {c["name"] for c in fields.get("components", [])}
+            repo_path = ""
+            for op in OPERATORS.values():
+                if ticket_components & set(op.get("components", [])):
+                    repo_path = op.get("repo_path", "")
+                    break
+            agent_result = ask_agent(context, repo_path=repo_path)
             if not agent_result.ok:
                 jira_metrics.inc_errors()
                 print(f"[ERROR] Agent failed on {key}: {agent_result.error}, skipping comment.")
