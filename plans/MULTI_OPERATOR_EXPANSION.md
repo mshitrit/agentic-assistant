@@ -4,96 +4,59 @@
 
 ---
 
-## Step 1: Operator Registry in Config
+## ✅ Step 1: Operator Registry in Config
 
-Replace the current single-operator config fields (`COMPONENTS`, `SBR_REPO_PATH`) with a per-operator structure in `config/config.txt`:
+Replace the single-operator config fields (`COMPONENTS`, `SBR_REPO_PATH`) with a per-operator structure in `config/config.txt`:
 
 ```
 OPERATOR_SBR_COMPONENTS=Storage-based Remediation
-OPERATOR_SBR_REPO_PATH=/home/.../storage-based-remediation
-
-OPERATOR_FAR_COMPONENTS=Fence Agents Remediation
-OPERATOR_FAR_REPO_PATH=/home/.../fence-agents-remediation
+OPERATOR_SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
 ```
 
-Update `config/settings.py` to parse these into a dict keyed by operator name:
+`config/settings.py` parses these into an `OPERATORS` dict keyed by operator name:
 
 ```python
 OPERATORS = {
-    "sbr": {"components": [...], "repo_path": "..."},
-    "far": {"components": [...], "repo_path": "..."},
+    "sbr": {"components": ["Storage-based Remediation"], "repo_path": "..."},
 }
 ```
 
 ---
 
-## Step 2: Operator Detection Per Ticket
+## ✅ Step 2: Operator Detection Per Ticket
 
-When a ticket is fetched, determine which operator it belongs to by matching its Jira components against each operator's component list.
-
-- Add a `detect_operator(fields: dict) -> str | None` function in `jira/utils.py`
-- Returns the operator key (e.g. `"sbr"`) or `None` if no match
-- Pass the detected operator through to the agent context
+`detect_operator(fields, operators)` in `jira/utils.py` matches a ticket's Jira components against each operator's component list and returns the operator key (e.g. `"sbr"`) or `None`. Tickets with no matching operator are skipped with a console warning.
 
 ---
 
-## Step 3: Per-Operator Memory Loading
+## ✅ Step 3: Per-Operator Memory Loading
 
-The memory structure already supports multiple operators (`memory/verified/{operator}/`, `memory/living/{operator}/`).
-
-Update `agent/prompts.py` to accept an `operator` parameter and load only that operator's memory directory instead of the full `verified/` and `living/` trees.
+`build_jira_prompt` in `agent/prompts.py` loads memory from `memory/verified/{operator}/` and `memory/living/{operator}/` when an operator is provided, scoping context to only the relevant operator's knowledge.
 
 ---
 
-## Step 4: Dynamic Prompt Persona
+## ✅ Step 4: Dynamic Prompt Persona
 
-The prompt currently hardcodes `"SBR (Storage-Based Remediation) engineer"`.
-
-Update `build_jira_prompt` and `build_slack_prompt` to accept an `operator` parameter and inject the correct operator name and description into the persona line.
-
-Maintain a small operator metadata dict (name, description) — either in `config/settings.py` or a new `agent/operators.py`.
+`build_jira_prompt` constructs the persona line dynamically using the operator's first component name (e.g. `"You are an experienced Storage-based Remediation engineer."`), removing the hardcoded SBR reference.
 
 ---
 
-## Step 5: Per-Operator Repo Access in Tools
+## ✅ Step 5: Per-Operator Repo Access in Tools
 
-`agent/tools.py` currently reads `SBR_REPO_PATH` from settings as a single global.
-
-Update `read_file` and `list_directory` to accept a `repo_path` parameter (or read it from a context object) so the correct operator repo is used per ticket.
+`read_file` and `list_directory` in `agent/tools.py` accept a `repo_path` parameter. `ask_agent` in `agent/claude.py` receives `repo_path` derived from `OPERATORS[operator]["repo_path"]` and passes it to tool calls.
 
 ---
 
-## Step 6: Jira Fetching
+## Step 6: Jira Fetching Verification
 
-Update `fetch_issues_by_components` to fetch all components across all operators in a single JQL query (already works — just pass the combined component list).
-
-Alternatively, fetch per operator and tag results with operator key at fetch time.
-
----
-
-## Step 7: Populate Verified Memory for New Operators
-
-For each new operator added, populate its verified memory by running the agent against the operator's codebase — same process used to populate `memory/verified/sbr/`.
-
-Files to create per operator:
-- `overview.md`
-- `architecture.md`
-- `failure_modes.md`
-- `runbook.md`
-- `code_map.md`
+Verify that the multi-operator JQL query works correctly end-to-end:
+- All operator components are combined into a single `component in (...)` JQL clause
+- Ticket counts match expectations across operators
+- Operator detection correctly routes each ticket
 
 ---
 
-## Step 8: Copy Living Memory
-
-After populating verified memory for each new operator:
-```bash
-cp -r memory/verified/{operator}/ memory/living/{operator}/
-```
-
----
-
-## Step 9: Slack Bot Operator Detection
+## Step 7: Slack Bot Operator Detection
 
 Since all operators share a single support channel, the Slack bot must determine operator context from the user's message using an explicit prefix.
 
@@ -139,6 +102,31 @@ User:  what about timeouts?                  → operator: FAR (last specified)
 |---|---|
 | `slack/client.py` | Add `extract_operator_from_thread(messages, bot_user_id) -> str \| None` — scans messages in reverse, skips bot messages, returns first valid `[OPERATOR]` tag found |
 | `slack_bot_main.py` | Parse operator at thread start; call `extract_operator_from_thread` for follow-ups; include operator in "Analysing..." message |
-| `agent/prompts.py` | Accept `operator` param in `build_slack_prompt` and `build_slack_thread_prompt`; load operator-specific memory dir; inject operator name into persona line |
-| `agent/tools.py` | Accept `repo_path` param (or operator key) in `read_file` / `list_directory` to use the correct operator repo |
-| `agent/claude.py` | Pass operator context through to prompt builder and tool functions |
+
+---
+
+## Step 8: Per-Operator Memory and Persona for Slack
+
+Update `build_slack_prompt` and `build_slack_thread_prompt` in `agent/prompts.py` to accept `operator` and `op_name` parameters — same pattern as `build_jira_prompt`. Update `build_prompt` and `ask_agent` to pass them through from `slack_bot_main.py`.
+
+---
+
+## Step 9: Populate Verified Memory for New Operators
+
+For each new operator added, populate its verified memory by running the agent against the operator's codebase — same process used to populate `memory/verified/sbr/`.
+
+Files to create per operator:
+- `overview.md`
+- `architecture.md`
+- `failure_modes.md`
+- `runbook.md`
+- `code_map.md`
+
+---
+
+## Step 10: Copy Living Memory
+
+After populating verified memory for each new operator:
+```bash
+cp -r memory/verified/{operator}/ memory/living/{operator}/
+```
