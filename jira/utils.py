@@ -12,6 +12,15 @@ def extract_adf_text(adf: dict) -> str:
     )
 
 
+def detect_operator(fields: dict, operators: dict) -> str | None:
+    """Return the operator key whose components match the ticket's components, or None."""
+    ticket_components = {c["name"] for c in fields.get("components", [])}
+    for op_key, op_config in operators.items():
+        if ticket_components & set(op_config.get("components", [])):
+            return op_key
+    return None
+
+
 def jira_request(fn):
     """Decorator that catches network/API errors, logs them, and returns None on failure."""
     @wraps(fn)

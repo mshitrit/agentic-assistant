@@ -25,7 +25,7 @@ def _load_md_files(directory: Path) -> dict[str, str]:
 
 _TOOL_USE_INSTRUCTIONS = (
     "## Tool Use Instructions\n"
-    "You have access to tools to read files from the SBR repository and update living memory. "
+    "You have access to tools to read files from the operator repository and update living memory. "
     "Use them sparingly and purposefully:\n"
     "- Only read files you have a clear, specific reason to check based on the question. "
     "Do not explore the codebase speculatively.\n"
@@ -39,14 +39,16 @@ _TOOL_USE_INSTRUCTIONS = (
 )
 
 
-def build_jira_prompt(context: dict) -> str:
-    verified = _load_md_files(VERIFIED_DIR)
-    living   = _load_md_files(LIVING_DIR)
+def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> str:
+    verified_dir = (VERIFIED_DIR / operator) if operator else VERIFIED_DIR
+    living_dir   = (LIVING_DIR / operator)   if operator else LIVING_DIR
+    verified = _load_md_files(verified_dir)
+    living   = _load_md_files(living_dir)
     living_updates = {k: v for k, v in living.items() if v != verified.get(k, "")}
 
+    persona = f"You are an experienced {op_name} engineer. " if op_name else "You are an experienced engineer. "
     parts = [
-        "You are an experienced SBR (Storage-Based Remediation) engineer. "
-        "Analyze the following Jira ticket using your domain knowledge and suggest next steps.",
+        persona + "Analyze the following Jira ticket using your domain knowledge and suggest next steps.",
         "## Ticket Details",
     ]
     for key, value in context.items():
@@ -138,9 +140,9 @@ def build_slack_thread_prompt(thread_history: str) -> str:
     return "\n\n".join(parts)
 
 
-def build_prompt(context: dict, mode: AgentMode = AgentMode.JIRA) -> str:
+def build_prompt(context: dict, mode: AgentMode = AgentMode.JIRA, operator: str = "", op_name: str = "") -> str:
     if mode == AgentMode.SLACK_THREAD:
         return build_slack_thread_prompt(context.get("title", ""))
     if mode == AgentMode.SLACK:
         return build_slack_prompt(context.get("title", ""))
-    return build_jira_prompt(context)
+    return build_jira_prompt(context, operator=operator, op_name=op_name)

@@ -25,13 +25,13 @@ class AgentResult:
         return self.error is None
 
 
-def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA, repo_path: str = "") -> AgentResult:
+def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA, repo_path: str = "", operator: str = "", op_name: str = "") -> AgentResult:
     if DebugMode.DISABLE_AI in DEBUG_MODE:
         return AgentResult(response=f"[DEBUG] AI disabled. Ticket '{context.get('title')}' requested AI analysis.")
 
     try:
         client = anthropic.AnthropicVertex(project_id=GCP_PROJECT, region=GCP_REGION)
-        prompt = build_prompt(context, mode)
+        prompt = build_prompt(context, mode, operator=operator, op_name=op_name)
 
         if LOG_LEVEL == "DEBUG":
             print(f"\n--- Agent Prompt ---\n{prompt}\n--- End Prompt ---\n")

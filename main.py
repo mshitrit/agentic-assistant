@@ -3,7 +3,7 @@ from datetime import datetime
 from config.settings import ISSUE_KEY, OPERATORS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT, LOG_LEVEL
 from jira.client import fetch_issues_by_components, get_issue_details
 from jira.comments import has_ai_comment, post_comment, extract_comment_text
-from jira.utils import extract_adf_text
+from jira.utils import extract_adf_text, detect_operator
 from agent.claude import ask_agent
 from telemetry.metrics import jira_metrics
 
@@ -64,19 +64,20 @@ if __name__ == "__main__":
                 "components":  [c["name"] for c in fields.get("components", [])],
                 "comments":    _format_comments(public_comments),
             }
-            ticket_components = {c["name"] for c in fields.get("components", [])}
-            repo_path = ""
-            for op in OPERATORS.values():
-                if ticket_components & set(op.get("components", [])):
-                    repo_path = op.get("repo_path", "")
-                    break
-            agent_result = ask_agent(context, repo_path=repo_path)
+            operator = detect_operator(fields, OPERATORS)
+            if operator is None:
+                print(f"[WARNING] No operator matched for {key}, skipping analysis.")
+                continue
+            op_name   = OPERATORS[operator]["components"][0]
+            repo_path = OPERATORS[operator].get("repo_path", "")
+            agent_result = ask_agent(context, operator=operator, op_name=op_name, repo_path=repo_path)
             if not agent_result.ok:
                 jira_metrics.inc_errors()
                 print(f"[ERROR] Agent failed on {key}: {agent_result.error}, skipping comment.")
                 continue
             print(f"Agent response: {agent_result.response}")
-            post_comment(key, agent_result.response)
+            labeled_response = f"*Analyzed as: {op_name}*\n\n{agent_result.response}"
+            post_comment(key, labeled_response)
             jira_metrics.inc_analyses_posted()
         print("--- End of cycle ---")
         jira_metrics._print()
