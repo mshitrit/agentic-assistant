@@ -46,7 +46,7 @@ git pull
 echo "Git pull complete."
 
 # ── 2. Update SBR repo (if configured) ───────────────────────────────────────
-SBR_REPO_PATH=$(grep -m1 "^SBR_REPO_PATH=" jira_config.txt 2>/dev/null | cut -d'=' -f2- | tr -d '[:space:]')
+SBR_REPO_PATH=$(grep -m1 "^SBR_REPO_PATH=" config/config.txt 2>/dev/null | cut -d'=' -f2- | tr -d '[:space:]')
 if [ -n "$SBR_REPO_PATH" ] && [ -d "$SBR_REPO_PATH" ]; then
     echo "Pulling latest changes in SBR repo at $SBR_REPO_PATH..."
     git -C "$SBR_REPO_PATH" pull origin main

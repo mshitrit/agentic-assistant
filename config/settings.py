@@ -1,7 +1,7 @@
 from enum import Flag, auto
 
 config = {}
-with open("jira_config.txt") as f:
+with open("config/config.txt") as f:
     for line in f:
         key, _, value = line.strip().partition("=")
         config[key] = value

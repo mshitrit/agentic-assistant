@@ -36,11 +36,11 @@ Go to **OAuth & Permissions → Bot Token Scopes** and add:
 1. Go to **OAuth & Permissions** → **Install to Workspace** → Allow
 2. Copy the `xoxb-...` Bot Token — this is your `SLACK_BOT_TOKEN`
 
-> Any time you change scopes or events, you must reinstall the app and update the token in `jira_config.txt`.
+> Any time you change scopes or events, you must reinstall the app and update the token in `config/config.txt`.
 
 ## 6. Configure Tokens
 
-Add both tokens to `jira_config.txt`:
+Add both tokens to `config/config.txt`:
 ```
 SLACK_BOT_TOKEN=xoxb-...
 SLACK_APP_TOKEN=xapp-...

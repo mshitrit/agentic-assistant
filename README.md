@@ -7,8 +7,8 @@ A Python-based PoC that monitors Jira tickets and triggers a Claude AI agent to 
 ```
 agentic-assistant/
 ├── config/
-│   ├── settings.py               # loads jira_config.txt, exposes all constants
-│   └── jira_config.template.txt  # configuration template
+│   ├── settings.py               # loads config.txt, exposes all constants
+│   └── config.template.txt       # configuration template
 ├── jira/
 │   ├── client.py                 # fetch issues and issue details from Jira API
 │   └── comments.py               # post, check and parse Jira comments
@@ -104,12 +104,12 @@ python3.11 -m pip install slack_bolt
 
 Copy the template and fill in your values:
 ```bash
-cp config/jira_config.template.txt jira_config.txt
+cp config/config.template.txt config/config.txt
 ```
 
-See `config/jira_config.template.txt` for field descriptions and how to retrieve each value.
+See `config/config.template.txt` for field descriptions and how to retrieve each value.
 
-> `jira_config.txt` is git-ignored and should never be committed.
+> `config/config.txt` is git-ignored and should never be committed.
 
 ## Memory
 
