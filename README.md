@@ -7,15 +7,21 @@ A Python-based PoC that monitors Jira tickets and triggers a Claude AI agent to 
 ```
 agentic-assistant/
 ├── config/
-│   ├── settings.py               # loads config.txt, exposes all constants
+│   ├── settings.py               # loads config/config.txt, exposes all constants
 │   └── config.template.txt       # configuration template
 ├── jira/
 │   ├── client.py                 # fetch issues and issue details from Jira API
 │   └── comments.py               # post, check and parse Jira comments
 ├── agent/
 │   └── claude.py                 # Claude AI via Vertex AI
+├── docs/                         # reference documentation
+│   ├── SLACK_BOT_SETUP.md        # Slack app setup guide
+│   ├── ROADMAP.md                # future enhancements
+│   └── TECH_DEBT.md              # known technical debt
+├── plans/                        # implementation plans (deleted after completion)
 ├── main.py                       # Jira poller entry point
 ├── slack_bot_main.py             # Slack bot entry point
+├── deploy.sh                     # deployment script
 └── jira_connectivity_test.py     # one-shot connectivity and write access test
 ```
 
@@ -25,7 +31,7 @@ agentic-assistant/
 |---|---|
 | `jira_connectivity_test.py` | One-shot test to verify Jira credentials and write access |
 | `main.py` | Polls tracked Jira tickets every 20s and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
-| `slack_bot_main.py` | Listens for `@mentions` in Slack and responds with AI-generated answers using the same domain knowledge as the Jira agent (see [Slack Bot Setup](SLACK_BOT_SETUP.md)) |
+| `slack_bot_main.py` | Listens for `@mentions` in Slack and responds with AI-generated answers using the same domain knowledge as the Jira agent (see [Slack Bot Setup](docs/SLACK_BOT_SETUP.md)) |
 
 ## Prerequisites
 
