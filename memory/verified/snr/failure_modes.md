@@ -60,6 +60,12 @@ Config defaults (override via **`SelfNodeRemediationConfig`**): **`apiCheckInter
 - **Behaviour:** Until **`MaxApiErrorThreshold`**, errors ignored. Above threshold, **peer quorum** determines if node is unhealthy; **`MinPeersForRemediation`** not met → node may be treated as **healthy** to avoid wrong reboot (**`HealthyBecauseNoPeersWereFound`**). **Isolated** node with **zero** peers and **`MinPeersForRemediation` > 0** → **unhealthy** (**`UnHealthyBecauseNodeIsIsolated`**).
 - **Outcome:** Possible **self-reboot** via **`Rebooter`** only when **`isConsideredHealthy()`** is false — see **`pkg/apicheck/check.go`**.
 
+### 3.3 Control-plane diagnostics (agent)
+
+- **Context:** On **control-plane** nodes, **`controlplane.Manager`** combines worker **peer** answers with **HTTP** diagnostics (**`endpointHealthCheckUrl`** when set), **kubelet** reachability, and **ping** to other control-plane machines.
+- **Behaviour:** A bad **URL**, network partition, or misconfigured endpoint can make **healthy vs unhealthy** decisions **flaky** or **misleading** compared to worker-only paths.
+- **Ops:** Verify **`SelfNodeRemediationConfig.spec.endpointHealthCheckUrl`**, connectivity, and agent logs on the control-plane node.
+
 ---
 
 ## 4. Remediation execution
@@ -81,6 +87,12 @@ Config defaults (override via **`SelfNodeRemediationConfig`**): **`apiCheckInter
 ### 4.4 Agent reboot skipped as duplicate
 
 - **`didIRebootMyself`** compares **Linux uptime** vs SNR **creation time** — if host already rebooted once in this lifecycle, avoids second reboot.
+
+### 4.5 Safe timing vs calculated minimum
+
+- **Symptom:** Workloads or **VolumeAttachments** still attached when cleanup runs, or fencing/cleanup feels **too early** or **too late** relative to an expected reboot.
+- **Behaviour:** **`status.timeAssumedRebooted`** comes from **`RebootDurationCalculator`**: effective wait is the **max** of **`safeTimeToAssumeNodeRebootedSeconds`** (only if **not below** the computed minimum) and a **minimum** derived from API/peer intervals, **`MaxTimeForNoPeersResponse`**, and the node **watchdog-timeout** annotation — see **architecture** (Safe timing).
+- **Ops:** Tune config intervals and **`safeTimeToAssumeNodeRebootedSeconds`**; confirm the node **`self-node-remediation.medik8s.io/watchdog-timeout`** annotation matches hardware expectations.
 
 ---
 

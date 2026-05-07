@@ -92,6 +92,12 @@ Implemented on **`SelfNodeRemediation.spec.remediationStrategy`**:
 
 ---
 
+## Coexistence (related operators)
+
+**Storage-Based Remediation (SBR)** and SNR both use the **watchdog** and node-level fencing semantics. Running **two** fully active watchdog-owning remediation flows on the **same** node is **unsafe** without explicit product guidance; common patterns use **SBR detect-only** plus SNR remediation, or a **single** remediator. See **overview** and **runbook** §7.
+
+---
+
 ## Networking and TLS
 
 - Agents expose **gRPC** on **host port** ( **`HOST_PORT`** env / **`spec.hostPort`** ) for peer health checks — cluster firewall must allow **node ↔ node** traffic on that port.

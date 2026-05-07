@@ -36,7 +36,7 @@ kubectl get snr -A
 kubectl describe snr -n <ns> <name>
 ```
 
-Inspect **Conditions** (**Processing**, **Succeeded**, **Disabled**), **`status.phase`**, **`status.lastError`**, **`status.timeAssumedRebooted`**.
+Inspect **Conditions** (**Processing**, **Succeeded**, **Disabled**), **`status.phase`**, **`status.lastError`**, **`status.timeAssumedRebooted`**. For stuck fencing, **`kubectl describe node <node>`** confirms **taints** and whether the SNR **finalizer** is still in play.
 
 ---
 
@@ -61,7 +61,7 @@ Environment variables on the DaemonSet mirror many of these (see **`main.go`** *
 
 - **`Automatic`:** Uses **`OutOfServiceTaint`** only when **`IsOutOfServiceTaintGA`** is true at runtime (Kubernetes **1.28+ GA** path in code); otherwise **`ResourceDeletion`**.
 - **`ResourceDeletion`:** Deletes workloads / attachments after fencing timeline — does **not** depend on OOS GA.
-- **`OutOfServiceTaint`:** Applies **`node.kubernetes.io/out-of-service`** — requires cluster support for the intended detach/eviction semantics.
+- **`OutOfServiceTaint`:** Applies **`node.kubernetes.io/out-of-service`** — requires cluster support for the intended detach/eviction semantics. After **`status.timeAssumedRebooted`**, controller housekeeping uses a **~1 minute** window (**`OutOfServiceTimeoutDuration`**); if detach/cleanup looks stuck, see **failure_modes §4.2**.
 
 Verify **`kubectl version`** / **`Server Version`** vs operator expectations if remediation appears to stick in **Reboot-Completed**.
 
@@ -69,12 +69,16 @@ Verify **`kubectl version`** / **`Server Version`** vs operator expectations if 
 
 ## 6. Debugging checklist
 
-1. **SNR CR** — phase stuck? **`lastError`**? **Conditions**?
-2. **Target node** — SNR agent **pod** scheduled? Annotation **`is-reboot-capable.self-node-remediation.medik8s.io=true`**?
-3. **Peers** — enough nodes? **`minPeersForRemediation`**? Network **TCP** to peer IPs on **`hostPort`**?
-4. **API check** — agent logs for **`/readyz`** failures; transient vs sustained outage.
-5. **Watchdog** — logs for **Malfunction** / **software reboot** path; **`IS_SOFTWARE_REBOOT_ENABLED`** / config **`isSoftwareRebootEnabled`**.
-6. **NHC** — timeout annotation **`remediation.medik8s.io/nhc-timed-out`** ends remediation early.
+1. **SNR CR** — phase stuck? **`lastError`**? **Conditions**? **Events** on the SNR?
+2. **Target identity** — **`kubectl get snr -n <ns> <name> -o yaml`**: align **`metadata.name`**, annotation **`remediation.medik8s.io/node-name`**, and (if **Machine**-owned) **`Machine.status.nodeRef`** (`kubectl get machine`).
+3. **Agent on node** — SNR agent **pod** scheduled? Annotation **`is-reboot-capable.self-node-remediation.medik8s.io=true`**?
+4. **Exclude label** — Node has **`remediation.medik8s.io/exclude-from-remediation=true`**? Remediation is skipped; look for **`RemediationSkipped`** on the SNR.
+5. **Node taints / finalizer** — **`kubectl describe node <node>`**: **`remediation.medik8s.io/self-node-remediation`** (NoSchedule), **`node.kubernetes.io/out-of-service`** when using OOS strategy; SNR **`self-node-remediation.medik8s.io/snr-finalizer`** until cleanup completes.
+6. **Peers** — enough nodes? **`minPeersForRemediation`**? Network **TCP** to peer IPs on **`hostPort`**?
+7. **API check** — agent logs for **`/readyz`** failures; transient vs sustained outage.
+8. **Watchdog** — logs for **Malfunction** / **software reboot** path; **`IS_SOFTWARE_REBOOT_ENABLED`** / config **`isSoftwareRebootEnabled`**.
+9. **NHC** — timeout annotation **`remediation.medik8s.io/nhc-timed-out`** ends remediation early.
+10. **Duplicate reboot skip** — If behaviour looks wrong after a recent reboot, compare **node uptime** to SNR **`metadata.creationTimestamp`** (code avoids a **second** reboot in the same lifecycle via **`didIRebootMyself`**).
 
 ---
 
