@@ -45,15 +45,15 @@ echo "Pulling latest changes from Git..."
 git pull
 echo "Git pull complete."
 
-# ── 2. Update SBR repo (if configured) ───────────────────────────────────────
-SBR_REPO_PATH=$(grep -m1 "^SBR_REPO_PATH=" config/config.txt 2>/dev/null | cut -d'=' -f2- | tr -d '[:space:]')
-if [ -n "$SBR_REPO_PATH" ] && [ -d "$SBR_REPO_PATH" ]; then
-    echo "Pulling latest changes in SBR repo at $SBR_REPO_PATH..."
-    git -C "$SBR_REPO_PATH" pull origin main
-    echo "SBR repo pull complete."
-else
-    echo "SBR_REPO_PATH not set or not found, skipping SBR repo update."
-fi
+# ── 2. Update operator repos (if configured) ─────────────────────────────────
+while IFS='=' read -r key value; do
+    [[ "$key" =~ ^OPERATOR_.*_REPO_PATH$ ]] || continue
+    value=$(echo "$value" | tr -d '[:space:]')
+    [ -n "$value" ] && [ -d "$value" ] || continue
+    echo "Pulling latest changes in operator repo at $value..."
+    git -C "$value" pull origin main
+    echo "Done."
+done < config/config.txt
 
 # ── 3. Stop running processes ─────────────────────────────────────────────────
 echo "Stopping any running agent processes..."
