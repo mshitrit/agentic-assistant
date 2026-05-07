@@ -1,23 +1,33 @@
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN
+from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN, OPERATORS
 from agent.claude import ask_agent
 from agent.prompts import AgentMode
-from slack.client import get_bot_user_id, get_thread_history
+from slack.client import (
+    get_bot_user_id,
+    fetch_thread_messages,
+    format_thread_history,
+    parse_operator_from_text,
+    extract_operator_from_thread,
+)
 from telemetry.metrics import slack_metrics
 
 app = App(token=SLACK_BOT_TOKEN)
 
-_DISCLAIMER = (
-    ":warning: *AI Disclaimer:* I am an AI assistant. "
-    "Please do not share sensitive or confidential information. "
-    "Analysing your question, please wait..."
-)
+VALID_OPERATORS = set(OPERATORS.keys())
 
 _ERROR_MESSAGES = {
     "rate_limit": ":warning: I'm temporarily unavailable due to high demand. Please try again in a moment.",
     "api_error":  ":warning: I encountered an error and couldn't process your request. Please try again later.",
 }
+
+
+def _operator_error_message() -> str:
+    valid_list = ", ".join(f"[{k.upper()}]" for k in sorted(VALID_OPERATORS))
+    return (
+        f":warning: Please prefix your question with an operator tag. Valid options: {valid_list}\n"
+        f"Example: `[SBR] how does fencing work?`"
+    )
 
 
 @app.event("app_mention")
@@ -30,22 +40,38 @@ def handle_mention(event, say, client):
 
     if is_thread_reply:
         bot_user_id = get_bot_user_id(client)
-        thread_history = get_thread_history(client, channel, thread_ts, bot_user_id)
+        messages = fetch_thread_messages(client, channel, thread_ts)
+        operator = extract_operator_from_thread(messages, bot_user_id, VALID_OPERATORS)
+        if operator is None:
+            say(":warning: Could not determine operator context. Please start a new thread with an operator tag.", thread_ts=ts)
+            return
+        op_name = OPERATORS[operator]["components"][0]
+        thread_history = format_thread_history(messages, bot_user_id)
         context = {"title": thread_history}
         mode = AgentMode.SLACK_THREAD
         slack_metrics.inc_followups()
-        say("Analysing your question, please wait...", thread_ts=ts)
+        say(f"Analysing your follow-up question about *{op_name}*, please wait...", thread_ts=ts)
     else:
         question = event["text"].split(">", 1)[-1].strip()
         if not question:
             say("Please include a question after mentioning me.", thread_ts=ts)
             return
+        operator = parse_operator_from_text(question, VALID_OPERATORS)
+        if operator is None:
+            say(_operator_error_message(), thread_ts=ts)
+            return
+        op_name = OPERATORS[operator]["components"][0]
         context = {"title": question}
         mode = AgentMode.SLACK
         slack_metrics.inc_threads_started()
-        say(_DISCLAIMER, thread_ts=ts)
+        say(
+            f":warning: *AI Disclaimer:* I am an AI assistant. "
+            f"Please do not share sensitive or confidential information. "
+            f"Analysing your question about *{op_name}*, please wait...",
+            thread_ts=ts
+        )
 
-    result = ask_agent(context, mode=mode)
+    result = ask_agent(context, mode=mode, operator=operator, op_name=op_name)
     if not result.ok:
         slack_metrics.inc_errors()
         say(_ERROR_MESSAGES.get(result.error, _ERROR_MESSAGES["api_error"]), thread_ts=ts)
