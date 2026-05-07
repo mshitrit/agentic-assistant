@@ -45,6 +45,17 @@ echo "Pulling latest changes from Git..."
 git pull
 echo "Git pull complete."
 
+# ── 1b. Seed living memory from verified if living is empty ───────────────────
+LIVING_ROOT="memory/living"
+VERIFIED_ROOT="memory/verified"
+if [ ! -d "$VERIFIED_ROOT" ]; then
+    echo "Warning: $VERIFIED_ROOT missing; skip living memory seed."
+elif [ ! -d "$LIVING_ROOT" ] || [ -z "$(ls -A "$LIVING_ROOT" 2>/dev/null)" ]; then
+    mkdir -p "$LIVING_ROOT"
+    cp -a "$VERIFIED_ROOT"/. "$LIVING_ROOT"/
+    echo "Living memory was empty; copied verified memory into $LIVING_ROOT"
+fi
+
 # ── 2. Update operator repos (if configured) ─────────────────────────────────
 while IFS='=' read -r key value; do
     [[ "$key" =~ ^OPERATOR_.*_REPO_PATH$ ]] || continue
