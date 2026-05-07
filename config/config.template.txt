@@ -26,10 +26,10 @@ CLOUD_ID=your-cloud-id
 #   1. Memory directories: memory/verified/{key}/ and memory/living/{key}/
 #      The key must exactly match the subdirectory names (lowercase).
 #   2. Slack tag: users prefix questions with [KEY] (case-insensitive) to select the operator.
-#      e.g. "[SBR] how does fencing work?"
+#      e.g. "[SBR] how does fencing work?" or "[SNR] how does node remediation trigger?"
 #   3. Internal routing: operator detection, prompt construction, and repo access all use the key.
 #
-# Choose short, memorable keys (e.g. SBR, FAR, MDR) and keep them consistent across config and memory dirs.
+# Choose short, memorable keys (e.g. SBR, FAR, SNR, MDR) and keep them consistent across config and memory dirs.
 #
 # OPERATOR_{KEY}_COMPONENTS: comma-separated Jira component names to watch
 # OPERATOR_{KEY}_REPO_PATH:  absolute path to a local clone of the operator repo
@@ -38,9 +38,12 @@ CLOUD_ID=your-cloud-id
 OPERATOR_SBR_COMPONENTS=Storage-based Remediation
 OPERATOR_SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
 
-# Example for a second operator:
+# Examples for additional operators (uncomment and set repo paths as needed):
 # OPERATOR_FAR_COMPONENTS=Fence Agents Remediation
 # OPERATOR_FAR_REPO_PATH=/home/user/gitRepos/medik8s/fence-agents-remediation
+#
+# OPERATOR_SNR_COMPONENTS=Self Node Remediation
+# OPERATOR_SNR_REPO_PATH=/home/user/gitRepos/medik8s/self-node-remediation
 
 # ==============================================
 # AI
