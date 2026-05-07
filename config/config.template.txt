@@ -21,7 +21,15 @@ CLOUD_ID=your-cloud-id
 
 # Each operator is defined by a Jira component list and an optional local repo path.
 # Add one block per operator using the pattern below.
-# The KEY (e.g. SBR, FAR) must match the subdirectory name under memory/verified/ and memory/living/
+#
+# The KEY is significant — it is used in three places:
+#   1. Memory directories: memory/verified/{key}/ and memory/living/{key}/
+#      The key must exactly match the subdirectory names (lowercase).
+#   2. Slack tag: users prefix questions with [KEY] (case-insensitive) to select the operator.
+#      e.g. "[SBR] how does fencing work?"
+#   3. Internal routing: operator detection, prompt construction, and repo access all use the key.
+#
+# Choose short, memorable keys (e.g. SBR, FAR, MDR) and keep them consistent across config and memory dirs.
 #
 # OPERATOR_{KEY}_COMPONENTS: comma-separated Jira component names to watch
 # OPERATOR_{KEY}_REPO_PATH:  absolute path to a local clone of the operator repo

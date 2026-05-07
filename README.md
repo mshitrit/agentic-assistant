@@ -121,6 +121,15 @@ See `config/config.template.txt` for field descriptions and how to retrieve each
 
 The agent uses a two-tier memory system to provide domain-aware analysis:
 
+### Operator Keys
+
+Each operator is identified by a short key (e.g. `sbr`, `far`) defined in `config/config.txt` via `OPERATOR_{KEY}_*` entries. The key is load-bearing — it must be consistent across three places:
+- **Memory directories:** `memory/verified/{key}/` and `memory/living/{key}/`
+- **Slack tag:** users prefix questions with `[KEY]` (e.g. `[SBR] how does fencing work?`)
+- **Config entries:** `OPERATOR_{KEY}_COMPONENTS` and `OPERATOR_{KEY}_REPO_PATH`
+
+Use short, uppercase keys in config (e.g. `SBR`, `FAR`) — they are lowercased internally.
+
 ### Verified Memory (`memory/verified/`)
 Human-curated knowledge base committed to git. Contains per-operator subdirectories (e.g. `memory/verified/sbr/`) with files covering overview, architecture, failure modes, runbook, and code map.
 

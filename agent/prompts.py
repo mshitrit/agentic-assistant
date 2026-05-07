@@ -77,19 +77,20 @@ def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> s
     return "\n\n".join(parts)
 
 
-def build_slack_prompt(question: str) -> str:
-    verified = _load_md_files(VERIFIED_DIR)
-    living   = _load_md_files(LIVING_DIR)
+def build_slack_prompt(question: str, operator: str = "", op_name: str = "") -> str:
+    verified_dir = (VERIFIED_DIR / operator) if operator else VERIFIED_DIR
+    living_dir   = (LIVING_DIR / operator)   if operator else LIVING_DIR
+    verified = _load_md_files(verified_dir)
+    living   = _load_md_files(living_dir)
     living_updates = {k: v for k, v in living.items() if v != verified.get(k, "")}
 
+    persona = f"You are an experienced {op_name} engineer" if op_name else "You are an experienced engineer"
     parts = [
-        "You are an experienced SBR (Storage-Based Remediation) engineer answering a question "
-        "from a colleague in Slack. Give a clear, direct answer. "
+        persona + " answering a question from a colleague in Slack. Give a clear, direct answer. "
         "Keep it concise unless the question asks for detail. "
         "Format your response using Slack markup: "
         "*bold* for emphasis, `code` for commands or field names, plain bullet points with - for lists. "
-        "Do not use Markdown headers (##) or double asterisks (**). "
-        "Do not add a disclaimer at the end.",
+        "Do not use Markdown headers (##) or double asterisks (**).",
         f"*Question:* {question}",
     ]
 
@@ -108,20 +109,21 @@ def build_slack_prompt(question: str) -> str:
     return "\n\n".join(parts)
 
 
-def build_slack_thread_prompt(thread_history: str) -> str:
-    verified = _load_md_files(VERIFIED_DIR)
-    living   = _load_md_files(LIVING_DIR)
+def build_slack_thread_prompt(thread_history: str, operator: str = "", op_name: str = "") -> str:
+    verified_dir = (VERIFIED_DIR / operator) if operator else VERIFIED_DIR
+    living_dir   = (LIVING_DIR / operator)   if operator else LIVING_DIR
+    verified = _load_md_files(verified_dir)
+    living   = _load_md_files(living_dir)
     living_updates = {k: v for k, v in living.items() if v != verified.get(k, "")}
 
+    persona = f"You are an experienced {op_name} engineer" if op_name else "You are an experienced engineer"
     parts = [
-        "You are an experienced SBR (Storage-Based Remediation) engineer continuing a conversation "
-        "in Slack. The thread history below shows what has already been discussed. "
+        persona + " continuing a conversation in Slack. The thread history below shows what has already been discussed. "
         "Answer the latest question in context of the prior exchange. "
         "Be concise and do not repeat what was already covered. "
         "Format your response using Slack markup: "
         "*bold* for emphasis, `code` for commands or field names, plain bullet points with - for lists. "
-        "Do not use Markdown headers (##) or double asterisks (**). "
-        "Do not add a disclaimer at the end.",
+        "Do not use Markdown headers (##) or double asterisks (**).",
         f"*Thread history:*\n{thread_history}",
     ]
 
@@ -142,7 +144,7 @@ def build_slack_thread_prompt(thread_history: str) -> str:
 
 def build_prompt(context: dict, mode: AgentMode = AgentMode.JIRA, operator: str = "", op_name: str = "") -> str:
     if mode == AgentMode.SLACK_THREAD:
-        return build_slack_thread_prompt(context.get("title", ""))
+        return build_slack_thread_prompt(context.get("title", ""), operator=operator, op_name=op_name)
     if mode == AgentMode.SLACK:
-        return build_slack_prompt(context.get("title", ""))
+        return build_slack_prompt(context.get("title", ""), operator=operator, op_name=op_name)
     return build_jira_prompt(context, operator=operator, op_name=op_name)
