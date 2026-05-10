@@ -25,7 +25,7 @@ def fetch_issues_by_components(components: list[str]) -> list[str]:
 def get_issue_details(issue_key: str) -> dict:
     url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{issue_key}"
     headers = {"Accept": "application/json"}
-    params = {"fields": "summary,labels,comment,description,status,priority,assignee,issuetype,components"}
+    params = {"fields": "summary,labels,comment,description,status,priority,assignee,issuetype,components,security"}
     response = requests.get(url, headers=headers, params=params, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
     response.raise_for_status()
     fields = response.json()["fields"]
