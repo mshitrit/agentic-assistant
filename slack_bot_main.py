@@ -1,6 +1,6 @@
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN, OPERATORS
+from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN, OPERATORS, SLACK_OPERATOR_TAGS
 from agent.claude import ask_agent
 from agent.prompts import AgentMode
 from slack.client import (
@@ -14,8 +14,6 @@ from telemetry.metrics import slack_metrics
 
 app = App(token=SLACK_BOT_TOKEN)
 
-VALID_OPERATORS = set(OPERATORS.keys())
-
 _ERROR_MESSAGES = {
     "rate_limit": ":warning: I'm temporarily unavailable due to high demand. Please try again in a moment.",
     "api_error":  ":warning: I encountered an error and couldn't process your request. Please try again later.",
@@ -23,11 +21,30 @@ _ERROR_MESSAGES = {
 
 
 def _operator_error_message() -> str:
-    valid_list = ", ".join(f"[{k.upper()}]" for k in sorted(VALID_OPERATORS))
+    valid_list = ", ".join(f"[{k.upper()}]" for k in sorted(SLACK_OPERATOR_TAGS))
+    tags = sorted(SLACK_OPERATOR_TAGS)
+    ex_a, ex_b = (tags[0], tags[-1]) if len(tags) >= 2 else (tags[0], tags[0]) if tags else ("sbr", "sbr")
     return (
         f":warning: Please prefix your question with an operator tag. Valid options: {valid_list}\n"
-        f"Example: `[SBR] how does fencing work?`"
+        f"Examples: `[{ex_a.upper()}] your question`  ·  `[{ex_b.upper()}] your question`"
     )
+
+
+def _operator_not_configured_message(operator: str) -> str:
+    u = operator.upper()
+    return (
+        f":warning: Operator `[{u}]` is not enabled in `config/config.txt`. "
+        f"Add `OPERATOR_{u}_COMPONENTS=...` (and optional `OPERATOR_{u}_REPO_PATH`). "
+        f"See `config/config.template.txt` for examples."
+    )
+
+
+def _is_slack_operator_configured(operator: str) -> bool:
+    return bool((OPERATORS.get(operator) or {}).get("components"))
+
+
+def _resolve_op_name(operator: str) -> str:
+    return OPERATORS[operator]["components"][0]
 
 
 @app.event("app_mention")
@@ -41,11 +58,14 @@ def handle_mention(event, say, client):
     if is_thread_reply:
         bot_user_id = get_bot_user_id(client)
         messages = fetch_thread_messages(client, channel, thread_ts)
-        operator = extract_operator_from_thread(messages, bot_user_id, VALID_OPERATORS)
+        operator = extract_operator_from_thread(messages, bot_user_id, SLACK_OPERATOR_TAGS)
         if operator is None:
             say(":warning: Could not determine operator context. Please start a new thread with an operator tag.", thread_ts=ts)
             return
-        op_name = OPERATORS[operator]["components"][0]
+        if not _is_slack_operator_configured(operator):
+            say(_operator_not_configured_message(operator), thread_ts=ts)
+            return
+        op_name = _resolve_op_name(operator)
         thread_history = format_thread_history(messages, bot_user_id)
         context = {"title": thread_history}
         mode = AgentMode.SLACK_THREAD
@@ -56,11 +76,14 @@ def handle_mention(event, say, client):
         if not question:
             say("Please include a question after mentioning me.", thread_ts=ts)
             return
-        operator = parse_operator_from_text(question, VALID_OPERATORS)
+        operator = parse_operator_from_text(question, SLACK_OPERATOR_TAGS)
         if operator is None:
             say(_operator_error_message(), thread_ts=ts)
             return
-        op_name = OPERATORS[operator]["components"][0]
+        if not _is_slack_operator_configured(operator):
+            say(_operator_not_configured_message(operator), thread_ts=ts)
+            return
+        op_name = _resolve_op_name(operator)
         context = {"title": question}
         mode = AgentMode.SLACK
         slack_metrics.inc_threads_started()
