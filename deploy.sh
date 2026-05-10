@@ -74,17 +74,28 @@ sleep 1
 
 # ── 4. Start selected processes ───────────────────────────────────────────────
 if [[ "$MODE" == "jira" || "$MODE" == "both" ]]; then
-    LOG_FILE="logs/main_${TIMESTAMP}.log"
-    echo "Starting Jira poller... logging to $LOG_FILE"
-    nohup env PYTHONUNBUFFERED=1 $PYTHON main.py > "$LOG_FILE" 2>&1 &
+    MAIN_LOG="logs/main_${TIMESTAMP}.log"
+    echo "Starting Jira poller... logging to $MAIN_LOG"
+    nohup env PYTHONUNBUFFERED=1 $PYTHON main.py > "$MAIN_LOG" 2>&1 &
     echo "Jira poller started. PID: $!"
 fi
 
 if [[ "$MODE" == "slack" || "$MODE" == "both" ]]; then
-    LOG_FILE="logs/slack_bot_${TIMESTAMP}.log"
-    echo "Starting Slack bot... logging to $LOG_FILE"
-    nohup env PYTHONUNBUFFERED=1 $PYTHON slack_bot_main.py > "$LOG_FILE" 2>&1 &
+    SLACK_LOG="logs/slack_bot_${TIMESTAMP}.log"
+    echo "Starting Slack bot... logging to $SLACK_LOG"
+    nohup env PYTHONUNBUFFERED=1 $PYTHON slack_bot_main.py > "$SLACK_LOG" 2>&1 &
     echo "Slack bot started. PID: $!"
 fi
 
 echo "Deployment complete."
+
+if [[ "$MODE" == "jira" ]]; then
+    echo "Following $MAIN_LOG (Ctrl+C to stop)..."
+    tail -f "$MAIN_LOG"
+elif [[ "$MODE" == "slack" ]]; then
+    echo "Following $SLACK_LOG (Ctrl+C to stop)..."
+    tail -f "$SLACK_LOG"
+else
+    echo "Following $MAIN_LOG and $SLACK_LOG (Ctrl+C to stop)..."
+    tail -f "$MAIN_LOG" "$SLACK_LOG"
+fi
