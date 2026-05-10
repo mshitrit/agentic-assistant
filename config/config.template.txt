@@ -42,6 +42,10 @@ OPERATOR_SBR_REPO_PATH=/home/user/gitRepos/medik8s/storage-based-remediation
 OPERATOR_FAR_COMPONENTS=Fence Agents Remediation
 OPERATOR_FAR_REPO_PATH=/home/user/gitRepos/medik8s/fence-agents-remediation
 
+# Machine Deletion Remediation (MDR) — Jira component name must match your project
+OPERATOR_MDR_COMPONENTS=Machine Deletion Remediation
+OPERATOR_MDR_REPO_PATH=/home/user/gitRepos/medik8s/machine-deletion-remediation
+
 # Examples for additional operators (uncomment and set repo paths as needed):
 #
 # OPERATOR_SNR_COMPONENTS=Self Node Remediation
