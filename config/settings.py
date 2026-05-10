@@ -1,6 +1,5 @@
 import re
 from enum import Flag, auto
-from pathlib import Path
 
 config = {}
 with open("config/config.txt") as f:
@@ -26,25 +25,6 @@ for _k, _v in config.items():
     if _m:
         _op = _m.group(1).lower()
         OPERATORS.setdefault(_op, {})["repo_path"] = _v.strip()
-
-# Slack: accept tags for every operator with verified memory (subdirs of memory/verified).
-_VERIFIED_MEMORY_ROOT = Path(__file__).resolve().parent.parent / "memory" / "verified"
-
-
-def _slack_operator_tags_from_verified_memory() -> frozenset[str]:
-    if not _VERIFIED_MEMORY_ROOT.is_dir():
-        return frozenset()
-    return frozenset(
-        p.name.lower()
-        for p in _VERIFIED_MEMORY_ROOT.iterdir()
-        if p.is_dir() and not p.name.startswith(".")
-    )
-
-
-_tags_from_memory = _slack_operator_tags_from_verified_memory()
-SLACK_OPERATOR_TAGS: frozenset[str] = (
-    _tags_from_memory if _tags_from_memory else frozenset(OPERATORS.keys())
-)
 
 POLL_INTERVAL   = 60
 AI_PREFIX       = "🤖 [AI Generated]\n\n"
