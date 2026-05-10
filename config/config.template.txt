@@ -26,10 +26,10 @@ CLOUD_ID=your-cloud-id
 #   1. Memory directories: memory/verified/{key}/ and memory/living/{key}/
 #      The key must exactly match the subdirectory names (lowercase).
 #   2. Slack tag: users prefix questions with [KEY] (case-insensitive) to select the operator.
-#      e.g. "[SBR] how does fencing work?", "[FAR] how does the fence agent run?", "[SNR] how does node remediation trigger?", or "[NHC] when does NHC escalate?"
+#      e.g. "[SBR] how does fencing work?", "[FAR] how does the fence agent run?", "[SNR] how does node remediation trigger?", "[NHC] when does NHC escalate?", or "[NMO] how does node maintenance cordon/drain work?"
 #   3. Internal routing: operator detection, prompt construction, and repo access all use the key.
 #
-# Choose short, memorable keys (e.g. SBR, FAR, SNR, NHC, MDR) and keep them consistent across config and memory dirs.
+# Choose short, memorable keys (e.g. SBR, FAR, SNR, NHC, MDR, NMO) and keep them consistent across config and memory dirs.
 #
 # OPERATOR_{KEY}_COMPONENTS: comma-separated Jira component names to watch
 # OPERATOR_{KEY}_REPO_PATH:  absolute path to a local clone of the operator repo
@@ -45,6 +45,10 @@ OPERATOR_FAR_REPO_PATH=/home/user/gitRepos/medik8s/fence-agents-remediation
 # Machine Deletion Remediation (MDR) — Jira component name must match your project
 OPERATOR_MDR_COMPONENTS=Machine Deletion Remediation
 OPERATOR_MDR_REPO_PATH=/home/user/gitRepos/medik8s/machine-deletion-remediation
+
+# Node Maintenance Operator (NMO) — Jira component name must match your project
+OPERATOR_NMO_COMPONENTS=Node Maintenance Operator
+OPERATOR_NMO_REPO_PATH=/home/user/gitRepos/medik8s/node-maintenance-operator
 
 # Examples for additional operators (uncomment and set repo paths as needed):
 #
