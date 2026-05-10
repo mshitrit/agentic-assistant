@@ -2,7 +2,13 @@ import time
 from datetime import datetime
 from config.settings import ISSUE_KEY, OPERATORS, POLL_INTERVAL, TRIGGER_LABEL, TRIGGER_COMMENT, LOG_LEVEL
 from jira.client import fetch_issues_by_components, get_issue_details
-from jira.comments import has_ai_comment, post_comment, extract_comment_text, post_restricted_issue_skip_notice
+from jira.comments import (
+    has_ai_comment,
+    has_restricted_skip_notice,
+    post_comment,
+    extract_comment_text,
+    post_restricted_issue_skip_notice,
+)
 from jira.utils import extract_adf_text, detect_operator
 from agent.claude import ask_agent
 from telemetry.metrics import jira_metrics
@@ -52,6 +58,12 @@ if __name__ == "__main__":
                     print(f"AI comment already exists on {key}, skipping.")
                 continue
             if fields.get("security") is not None:
+                if has_restricted_skip_notice(fields):
+                    if LOG_LEVEL == "DEBUG":
+                        print(
+                            f"Restricted-issue skip notice already on {key}, skipping duplicate post."
+                        )
+                    continue
                 print(
                     f"[INFO] {key} has a Jira security level; skipping external AI, posting explanation comment."
                 )

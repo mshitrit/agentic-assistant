@@ -14,6 +14,14 @@ def has_ai_comment(fields: dict) -> bool:
     return any(AI_PREFIX in extract_comment_text(c) for c in comments)
 
 
+RESTRICTED_SKIP_COMMENT_MARKER = "[agentic-assistant:skipped-restricted-issue]"
+
+
+def has_restricted_skip_notice(fields: dict) -> bool:
+    comments = fields.get("comment", {}).get("comments", [])
+    return any(RESTRICTED_SKIP_COMMENT_MARKER in extract_comment_text(c) for c in comments)
+
+
 RESTRICTED_ISSUE_SKIP_NOTICE = (
     "This issue has a **Jira security level** set (the ticket is restricted — e.g. not visible to all users). "
     "To avoid sending ticket content to the **external AI** service, **no automated analysis was run**.\n\n"
@@ -23,6 +31,39 @@ RESTRICTED_ISSUE_SKIP_NOTICE = (
     "- Run the agent **locally** with `ISSUE_KEY` only if your org policy permits processing this issue's data.\n\n"
     "_If restricted issues should be analyzed in your environment, update agent policy or configuration accordingly._"
 )
+
+
+SKIP_NOTICE_FOOTER = (
+    "\n\n---\n_This notice was posted by the agentic-assistant poller; no external AI analysis was run._"
+)
+
+
+@jira_request
+def post_employee_visible_plain_comment(issue_key: str, full_comment: str) -> None:
+    """Post a comment visible to Red Hat Employee group only; no AI prefix or AI disclaimer."""
+    if DebugMode.DISABLE_JIRA in DEBUG_MODE:
+        print(f"[DEBUG] Would post plain employee comment on {issue_key}: {full_comment}")
+        return
+    url = f"https://api.atlassian.com/ex/jira/{CLOUD_ID}/rest/api/3/issue/{issue_key}/comment"
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+    body_dict = {
+        "body": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": full_comment}],
+                }
+            ],
+        },
+        "visibility": {"type": "group", "value": "Red Hat Employee"},
+    }
+    response = requests.post(url, data=json.dumps(body_dict), headers=headers, auth=(JIRA_USER, JIRA_TOKEN), timeout=10)
+    if response.status_code == 201:
+        print(f"Comment posted successfully on {issue_key}.")
+    else:
+        print(f"Failed to post comment on {issue_key}: {response.status_code} - {response.text}")
 
 
 @jira_request
@@ -57,5 +98,6 @@ def post_comment(issue_key: str, agent_response: str):
 
 
 def post_restricted_issue_skip_notice(issue_key: str) -> None:
-    """Post employee-visible comment; uses same AI_PREFIX as normal replies so we do not re-trigger analysis."""
-    post_comment(issue_key, RESTRICTED_ISSUE_SKIP_NOTICE)
+    """Employee-visible skip notice: not AI-generated; marker avoids duplicate posts while issue stays restricted."""
+    body = f"{RESTRICTED_SKIP_COMMENT_MARKER}\n\n{RESTRICTED_ISSUE_SKIP_NOTICE}{SKIP_NOTICE_FOOTER}"
+    post_employee_visible_plain_comment(issue_key, body)
