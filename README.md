@@ -18,10 +18,12 @@ agentic-assistant/
 │   ├── SLACK_BOT_SETUP.md        # Slack app setup guide
 │   ├── ROADMAP.md                # future enhancements
 │   └── TECH_DEBT.md              # known technical debt
+├── scripts/
+│   └── update-operator-repos.sh  # git pull for each OPERATOR_*_REPO_PATH (see deploy)
 ├── plans/                        # implementation plans (deleted after completion)
 ├── main.py                       # Jira poller entry point
 ├── slack_bot_main.py             # Slack bot entry point
-├── deploy.sh                     # deployment script
+├── deploy.sh                     # deployment script (pull, memory seed, operator sync, cron, restart)
 └── jira_connectivity_test.py     # one-shot connectivity and write access test
 ```
 
@@ -30,8 +32,10 @@ agentic-assistant/
 | File | Description |
 |---|---|
 | `jira_connectivity_test.py` | One-shot test to verify Jira credentials and write access |
-| `main.py` | Polls tracked Jira tickets every 20s and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
+| `main.py` | Polls tracked Jira tickets on an interval (default 60s via `POLL_INTERVAL` in `config/settings.py`) and posts an AI-generated comment when an `ai-assist` label or `/ai-assist` comment is detected |
 | `slack_bot_main.py` | Listens for `@mentions` in Slack and responds with AI-generated answers using the same domain knowledge as the Jira agent (see [Slack Bot Setup](docs/SLACK_BOT_SETUP.md)) |
+| `deploy.sh` | `git pull`, seeds empty `memory/living/` from verified memory, runs `scripts/update-operator-repos.sh`, installs a daily 02:00 cron job for operator repo sync (`AGENTIC_CRON_JOB=operator_repo_sync`), restarts selected processes, then `tail -f` on the new log files |
+| `scripts/update-operator-repos.sh` | For each `OPERATOR_*_REPO_PATH` in `config/config.txt`, runs `git pull origin main`; append-only log at `logs/operator-repos-sync.log` |
 
 ## Prerequisites
 
@@ -161,6 +165,10 @@ Add a comment containing `/ai-assist` anywhere in the text.
 Once triggered, the agent will post an AI-generated comment (prefixed with 🤖 [AI Generated]) on the ticket.
 The agent will only comment once per trigger — if an AI-generated comment already exists, it will not post again.
 To request another analysis, remove the existing AI comment or add a new `/ai-assist` comment.
+
+## Deployment
+
+From the repo root, run `./deploy.sh jira`, `./deploy.sh slack`, or `./deploy.sh both`. The script updates this repository, ensures living memory exists, syncs configured operator code clones once, refreshes the crontab entry for a daily 02:00 operator-repo pull (if `crontab` is available), stops any running poller/bot for this tree, starts the chosen processes under `nohup` with timestamped logs under `logs/`, then follows those logs. Operator sync output is also written to `logs/operator-repos-sync.log`.
 
 ## Usage
 

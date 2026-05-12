@@ -2,6 +2,8 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
 # ── Usage ────────────────────────────────────────────────────────────────────
 usage() {
     echo "Usage: $0 [jira|slack|both]"
@@ -57,14 +59,22 @@ elif [ ! -d "$LIVING_ROOT" ] || [ -z "$(ls -A "$LIVING_ROOT" 2>/dev/null)" ]; th
 fi
 
 # ── 2. Update operator repos (if configured) ─────────────────────────────────
-while IFS='=' read -r key value; do
-    [[ "$key" =~ ^OPERATOR_.*_REPO_PATH$ ]] || continue
-    value=$(echo "$value" | tr -d '[:space:]')
-    [ -n "$value" ] && [ -d "$value" ] || continue
-    echo "Pulling latest changes in operator repo at $value..."
-    git -C "$value" pull origin main
-    echo "Done."
-done < config/config.txt
+bash "$REPO_ROOT/scripts/update-operator-repos.sh"
+echo "Operator repo sync complete; see logs/operator-repos-sync.log"
+
+# ── 2b. Daily cron: operator repos at 02:00 (replaces prior entry with same id) ─
+CRON_TAG="AGENTIC_CRON_JOB=operator_repo_sync"
+CRON_LINE="0 2 * * * cd \"$REPO_ROOT\" && exec env $CRON_TAG /usr/bin/env bash \"$REPO_ROOT/scripts/update-operator-repos.sh\""
+if command -v crontab &>/dev/null; then
+    _cron_tmp="$(mktemp)"
+    ( crontab -l 2>/dev/null | grep -vF "$CRON_TAG" || true ) >"$_cron_tmp"
+    echo "$CRON_LINE" >>"$_cron_tmp"
+    crontab "$_cron_tmp"
+    rm -f "$_cron_tmp"
+    echo "Cron: daily 02:00 operator repo sync installed (id: $CRON_TAG)."
+else
+    echo "Warning: crontab not found; skipping daily operator repo sync schedule."
+fi
 
 # ── 3. Stop running processes ─────────────────────────────────────────────────
 echo "Stopping any running agent processes..."

@@ -4,13 +4,13 @@
 
 **Priority: High**
 
-**Current approach:** `main.py` polls Jira every 20 seconds to check for trigger conditions.
+**Current approach:** `main.py` polls Jira every 60 seconds to check for trigger conditions (`POLL_INTERVAL` in `config/settings.py`).
 
 **Why polling was chosen:** Webhook registration requires Jira admin permissions, which were not available. Polling was used as a simpler alternative sufficient for PoC purposes.
 
 **Why this is debt:**
 - Inefficient — makes API calls every cycle regardless of activity
-- Reaction time bounded by poll interval (currently 20s)
+- Reaction time bounded by poll interval (currently 60s)
 - Higher API usage, potential rate limiting at scale
 
 ## 2. Designated Jira Account for the AI Agent
@@ -58,19 +58,7 @@
 
 **Priority: Low** — cost is acceptable at current scale. Revisit if request volume grows significantly.
 
-## 5. SBR Local Repo Staleness
-
-**Priority: Medium**
-
-**Current approach:** `SBR_REPO_PATH` points to a manually maintained local clone of the SBR repo.
-
-**Why this is debt:**
-- The local clone can drift from the actual codebase if not kept up to date
-- A stale clone undermines the agent's ability to detect memory drift (Step 4) and provide accurate code references
-
-**Desired solution:** Automate repo sync — e.g. a periodic `git pull` via cron job, or trigger a pull at agent startup if the last sync was more than N hours ago.
-
-## 6. Migrate Tool Integration to MCP (Model Context Protocol)
+## 5. Migrate Tool Integration to MCP (Model Context Protocol)
 
 **Current approach:** Tools (`read_file`, `list_directory`, `write_memory_file`) are defined manually in `agent/tools.py` with hand-written JSON schemas, and the tool call/result loop is implemented by hand in `agent/claude.py`.
 
@@ -88,7 +76,7 @@
 
 **Priority:** Low — current implementation works well for the current scope.
 
-## 7. Add Automated Tests
+## 6. Add Automated Tests
 
 **Priority: Medium**
 
@@ -106,7 +94,7 @@
 
 Use `pytest` with mocked HTTP responses (`responses` or `unittest.mock`) to avoid live API calls.
 
-## 8. Jira Comment Formatting
+## 7. Jira Comment Formatting
 
 **Priority: Low**
 
@@ -118,7 +106,7 @@ Use `pytest` with mocked HTTP responses (`responses` or `unittest.mock`) to avoi
 
 **Desired solution:** Convert the agent's Markdown response to ADF before posting. A lightweight conversion (headers → ADF headings, bold → ADF strong, bullet lists → ADF bullet lists) in `jira/comments.py` would cover the most common cases. Libraries like `markdown-it-py` or a custom converter could be used.
 
-## 10. Living Memory Concurrent Write Safety
+## 8. Living Memory Concurrent Write Safety
 
 **Priority: Medium**
 
