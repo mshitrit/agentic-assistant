@@ -46,6 +46,7 @@ def handle_mention(event, say, client):
             say(":warning: Could not determine operator context. Please start a new thread with an operator tag.", thread_ts=ts)
             return
         op_name = OPERATORS[operator]["components"][0]
+        repo_path = OPERATORS[operator].get("repo_path", "")
         thread_history = format_thread_history(messages, bot_user_id)
         context = {"title": thread_history}
         mode = AgentMode.SLACK_THREAD
@@ -61,6 +62,7 @@ def handle_mention(event, say, client):
             say(_operator_error_message(), thread_ts=ts)
             return
         op_name = OPERATORS[operator]["components"][0]
+        repo_path = OPERATORS[operator].get("repo_path", "")
         context = {"title": question}
         mode = AgentMode.SLACK
         slack_metrics.inc_threads_started()
@@ -71,7 +73,7 @@ def handle_mention(event, say, client):
             thread_ts=ts
         )
 
-    result = ask_agent(context, mode=mode, operator=operator, op_name=op_name)
+    result = ask_agent(context, mode=mode, operator=operator, op_name=op_name, repo_path=repo_path)
     if not result.ok:
         slack_metrics.inc_errors()
         say(_ERROR_MESSAGES.get(result.error, _ERROR_MESSAGES["api_error"]), thread_ts=ts)
