@@ -1,6 +1,6 @@
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from config.settings import SLACK_BOT_TOKEN, SLACK_APP_TOKEN, OPERATORS
+from config.settings import LOG_LEVEL, SLACK_BOT_TOKEN, SLACK_APP_TOKEN, OPERATORS
 from agent.claude import ask_agent
 from agent.prompts import AgentMode
 from slack.client import (
@@ -77,6 +77,8 @@ def handle_mention(event, say, client):
         say(_ERROR_MESSAGES.get(result.error, _ERROR_MESSAGES["api_error"]), thread_ts=ts)
     else:
         slack_metrics.inc_success()
+        if LOG_LEVEL == "DEBUG":
+            print(f"[Slack agent response]\n{result.response}")
         say(result.response, thread_ts=ts)
 
 
