@@ -30,3 +30,6 @@ Thumbs.db
 
 # Logs
 logs/
+
+# Machine-local scripts and artifacts (not committed)
+local/
