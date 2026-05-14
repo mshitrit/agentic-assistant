@@ -4,7 +4,7 @@
 
 This document explains **how the MDR operator runs**: **`MachineDeletionRemediation`** reconciliation, **Machine** resolution, **Machine** deletion, and the **replica / node-count** success gate. Read **`overview.md`** first for the product-level picture.
 
-**Code reference:** `github.com/medik8s/machine-deletion-remediation` — primarily **`controllers/machinedeletionremediation_controller.go`**, **`api/v1alpha1/*`**, **`main.go`**.
+**Code reference:** `github.com/medik8s/machine-deletion-remediation` — primarily **`internal/controller/machinedeletionremediation_controller.go`**, **`api/v1alpha1/*`**, **`cmd/main.go`**.
 
 ## API scope
 
@@ -14,18 +14,18 @@ This document explains **how the MDR operator runs**: **`MachineDeletionRemediat
 - **`MachineDeletionRemediation.spec`:** **empty** struct (no user-facing fields today)
 - **`MachineDeletionRemediationTemplate`:** **`spec.template.spec`** embeds the same empty **spec** for **NHC** template wiring; **no** template controller in this repository
 
-## Operator startup (`main.go`)
+## Operator startup (`cmd/main.go`)
 
 The process builds a **controller-runtime** **Manager** with:
 
 - **Scheme:** core Kubernetes + **`api/v1alpha1`** + **`machine.openshift.io`** **v1** and **v1beta1** (**Machine**, **MachineSet**, **ControlPlaneMachineSet**)
 - **Metrics:** bind **`:8080`**; **TLS** options disable **HTTP/2** on the metrics server (**CVE hardening** pattern)
 - **Health / readiness:** **`:8081`** (**`healthz`**, **`readyz`** — ping checks)
-- **Leader election:** **`--leader-elect`** flag (default **false** in code); **`LeaderElectionID`** is **`285d4098.example.com`** in **`main.go`** — **verify** the **ClusterServiceVersion** / deployment for what runs in production (FAR-style drift is possible)
+- **Leader election:** **`--leader-elect`** flag (default **false** in code); **`LeaderElectionID`** is **`285d4098.example.com`** in **`cmd/main.go`** — **verify** the **ClusterServiceVersion** / deployment for what runs in production (FAR-style drift is possible)
 
 Only **`MachineDeletionRemediationReconciler`** is registered. **No admission webhooks.**
 
-## Reconciliation (`controllers/machinedeletionremediation_controller.go`)
+## Reconciliation (`internal/controller/machinedeletionremediation_controller.go`)
 
 ### End-of-reconcile status
 
@@ -100,4 +100,4 @@ Uses **medik8s/common** condition types **Processing**, **Succeeded**, **Permane
 
 ## Scope
 
-This document does **not** replace **NHC** / **MHC** documentation or OLM bundle specifics beyond **`main.go`** defaults.
+This document does **not** replace **NHC** / **MHC** documentation or OLM bundle specifics beyond **`cmd/main.go`** defaults.

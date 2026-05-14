@@ -15,7 +15,7 @@ storage-based-remediation/
 │   ├── main.go             # sbr-operator: manager, config controller, webhooks only
 │   └── sbr-agent/          # sbr-agent: heartbeats, peer monitor, watchdog, remediation fencing
 ├── config/                 # Kustomize / deployment manifests
-├── pkg/
+├── internal/
 │   ├── agent/              # Shared CLI flag names + shared-storage path constants (DaemonSet ↔ agent)
 │   ├── blockdevice/        # Raw block I/O with timeouts and retries (SBR heartbeat/fence devices)
 │   ├── controller/         # StorageBasedRemediationConfig + StorageBasedRemediation reconcilers
@@ -70,14 +70,14 @@ Owns all agent loops, the embedded controller-runtime manager, and the self-fenc
 | `storagebasedremediationconfig_types.go` | Full Config spec + `ValidateAll` + field validators + defaults + `deriveAgentImageFromOperator` |
 | `storagebasedremediationconfig_webhook.go` | Admission: `ValidateCreate` / `ValidateUpdate` call `Spec.ValidateAll()` |
 
-### `pkg/controller/`
+### `internal/controller/`
 
 | File | Role |
 |---|---|
 | `storagebasedremediationconfig_controller.go` | DaemonSet, PVC, init Job, SA/RBAC, StorageClass validation, `buildDaemonSet`, `buildSBRAgentArgs`, `updateStatus` |
 | `storagebasedremediation_controller.go` | `SBRRemediationReconciler`: cordon, `writeFenceMessage`, `checkFencingCompletion`, `ensureOutOfServiceTaint`, deletion cleanup |
 
-### `pkg/sbdprotocol/`
+### `internal/sbdprotocol/`
 
 | File | Role |
 |---|---|
@@ -85,19 +85,19 @@ Owns all agent loops, the embedded controller-runtime manager, and the self-fenc
 | `nodemap.go` | JSON node-name↔slot mapping on disk: `NodeMapTable`, hash-based `AssignSlot`, checksum |
 | `nodemanager.go` | `NodeManager`: load/sync map file, `GetNodeIDForNode`, `LookupNodeIDForNode`, `WriteWithLock` / `ReadWithLock`, stale cleanup, periodic sync |
 
-### `pkg/blockdevice/blockdevice.go`
+### `internal/blockdevice/blockdevice.go`
 
 `Device`: `Open` / `OpenWithTimeout`, `ReadAt` / `WriteAt` / `Sync` with I/O timeouts (goroutine + `time.After`) and `retry.Do`.
 
-### `pkg/watchdog/watchdog.go`
+### `internal/watchdog/watchdog.go`
 
 `Watchdog`: `Pet()` (ioctl keepalive + write fallback), `NewWithSoftdogFallback` (loads `softdog` via nsenter), `Close`.
 
-### `pkg/agent/flags.go`
+### `internal/agent/flags.go`
 
 Flag name constants (`FlagWatchdogPath`, `FlagSBRDevice`, etc.), defaults, and **shared storage layout constants** — the bridge between DaemonSet args and agent runtime (`SharedStorageSBRDeviceFile`, `SharedStorageFenceDeviceSuffix`, `SharedStorageNodeMappingSuffix`, mount path `/dev/sbr`).
 
-### `pkg/retry/retry.go`
+### `internal/retry/retry.go`
 
 `retry.Config`, `retry.Do`, `IsTransientError`, `NewRetryableError` — used by agent, blockdevice, watchdog, and controllers throughout.
 
@@ -107,22 +107,22 @@ Flag name constants (`FlagWatchdogPath`, `FlagSBRDevice`, etc.), defaults, and *
 
 | Function | File | Description |
 |---|---|---|
-| `(*SBRRemediationReconciler).Reconcile` | `pkg/controller/storagebasedremediation_controller.go` | Fence peer: cordon → write fence → wait → OOS taint → success |
-| `(*SBRRemediationReconciler).writeFenceMessage` | `pkg/controller/storagebasedremediation_controller.go` | Marshal fence to target slot on fence device |
-| `(*SBRRemediationReconciler).ensureOutOfServiceTaint` | `pkg/controller/storagebasedremediation_controller.go` | Apply `node.kubernetes.io/out-of-service` NoExecute taint |
-| `(*SBRRemediationReconciler).checkFencingCompletion` | `pkg/controller/storagebasedremediation_controller.go` | Poll node Ready status + heartbeat staleness; force-complete on timeout |
-| `(*StorageBasedRemediationConfigReconciler).Reconcile` | `pkg/controller/storagebasedremediationconfig_controller.go` | Validate SC, PVC, init Job, DaemonSet, status |
-| `(*StorageBasedRemediationConfigReconciler).validateStorageClass` | `pkg/controller/storagebasedremediationconfig_controller.go` | RWX provisioner checks + optional test PVC |
-| `(*StorageBasedRemediationConfigReconciler).buildDaemonSet` | `pkg/controller/storagebasedremediationconfig_controller.go` | Build full privileged pod spec with host mounts and agent args |
+| `(*SBRRemediationReconciler).Reconcile` | `internal/controller/storagebasedremediation_controller.go` | Fence peer: cordon → write fence → wait → OOS taint → success |
+| `(*SBRRemediationReconciler).writeFenceMessage` | `internal/controller/storagebasedremediation_controller.go` | Marshal fence to target slot on fence device |
+| `(*SBRRemediationReconciler).ensureOutOfServiceTaint` | `internal/controller/storagebasedremediation_controller.go` | Apply `node.kubernetes.io/out-of-service` NoExecute taint |
+| `(*SBRRemediationReconciler).checkFencingCompletion` | `internal/controller/storagebasedremediation_controller.go` | Poll node Ready status + heartbeat staleness; force-complete on timeout |
+| `(*StorageBasedRemediationConfigReconciler).Reconcile` | `internal/controller/storagebasedremediationconfig_controller.go` | Validate SC, PVC, init Job, DaemonSet, status |
+| `(*StorageBasedRemediationConfigReconciler).validateStorageClass` | `internal/controller/storagebasedremediationconfig_controller.go` | RWX provisioner checks + optional test PVC |
+| `(*StorageBasedRemediationConfigReconciler).buildDaemonSet` | `internal/controller/storagebasedremediationconfig_controller.go` | Build full privileged pod spec with host mounts and agent args |
 | `shouldTriggerSelfFence` | `cmd/sbr-agent/main.go` | Failure threshold check; aborts if no remediation CR confirmed |
 | `handleWatchdogTickSBRUnhealthy` | `cmd/sbr-agent/main.go` | Per-tick: detect-only / stop petting (CR exists or API error) / keep petting (no CR) |
 | `executeSelfFencing` | `cmd/sbr-agent/main.go` | Runs reboot method; stops watchdog petting |
 | `peerMonitorLoop` | `cmd/sbr-agent/main.go` | Read peers, assess liveness, set `SBRStorageUnhealthy` node condition |
 | `setNodeConditionSBRStorageUnhealthyStatus` | `cmd/sbr-agent/main.go` | Patch node status with `SBRStorageUnhealthy` condition |
-| `(*NodeManager).WriteWithLock` | `pkg/sbdprotocol/nodemanager.go` | Serialize writes to SBR device + map file with optional file lock |
-| `(*NodeManager).GetNodeIDForNode` | `pkg/sbdprotocol/nodemanager.go` | Assign or retrieve slot ID for this node |
-| `(*Watchdog).Pet` | `pkg/watchdog/watchdog.go` | ioctl keepalive (+ write fallback) |
-| `retry.Do` | `pkg/retry/retry.go` | Backoff retry for transient errors |
+| `(*NodeManager).WriteWithLock` | `internal/sbdprotocol/nodemanager.go` | Serialize writes to SBR device + map file with optional file lock |
+| `(*NodeManager).GetNodeIDForNode` | `internal/sbdprotocol/nodemanager.go` | Assign or retrieve slot ID for this node |
+| `(*Watchdog).Pet` | `internal/watchdog/watchdog.go` | ioctl keepalive (+ write fallback) |
+| `retry.Do` | `internal/retry/retry.go` | Backoff retry for transient errors |
 
 ---
 
@@ -130,18 +130,18 @@ Flag name constants (`FlagWatchdogPath`, `FlagSBRDevice`, etc.), defaults, and *
 
 | Question | Answer |
 |---|---|
-| **Where is fencing logic?** | **Peer → self-fence** (own slot): `cmd/sbr-agent/main.go` — `readOwnSlotForFenceMessage`, `executeSelfFencing`. **NHC/operator → peer** (fence write): `pkg/controller/storagebasedremediation_controller.go` — `executeFencing`, `writeFenceMessage`. |
-| **Where is heartbeat written?** | `cmd/sbr-agent/main.go`: `heartbeatLoop` → `writeHeartbeatToSBR` → `writeHeartbeatToSBRInternal` (uses `sbdprotocol.MarshalHeartbeat` + `NodeManager.WriteWithLock`). |
+| **Where is fencing logic?** | **Peer → self-fence** (own slot): `cmd/sbr-agent/main.go` — `readOwnSlotForFenceMessage`, `executeSelfFencing`. **NHC/operator → peer** (fence write): `internal/controller/storagebasedremediation_controller.go` — `executeFencing`, `writeFenceMessage`. |
+| **Where is heartbeat written?** | `cmd/sbr-agent/main.go`: `heartbeatLoop` → `writeHeartbeatToSBR` → `writeHeartbeatToSBRInternal` (uses **`internal/sbdprotocol`** `MarshalHeartbeat` + `NodeManager.WriteWithLock`). |
 | **Where is peer health checked?** | `cmd/sbr-agent/main.go`: `peerMonitorLoop` → `readPeerHeartbeat` → `peerMonitor.updatePeer` / `checkPeerLiveness`. |
 | **Where is node condition set?** | `cmd/sbr-agent/main.go`: `setNodeConditionSBRStorageUnhealthy`, `setNodeConditionSBRStorageUnhealthyStatus`. Type constant: `api/v1alpha1/storagebasedremediation_types.go` — `NodeConditionSBRStorageUnhealthy`. |
-| **Where is watchdog petted?** | `pkg/watchdog/watchdog.go`: `Pet()`. Called from `cmd/sbr-agent/main.go`: `petWatchdogWhenHealthy` and (conditionally) `handleWatchdogTickSBRUnhealthy`. |
+| **Where is watchdog petted?** | `internal/watchdog/watchdog.go`: `Pet()`. Called from `cmd/sbr-agent/main.go`: `petWatchdogWhenHealthy` and (conditionally) `handleWatchdogTickSBRUnhealthy`. |
 | **Where is self-fence decision made?** | `cmd/sbr-agent/main.go`: `shouldTriggerSelfFence` (failure counts + CR gate), called from `watchdogLoop`. |
-| **Where is OOS taint applied?** | `pkg/controller/storagebasedremediation_controller.go`: `ensureOutOfServiceTaint`. Delayed for fresh agent remediations: `isRemediationFresh`, `SBRAgentRemediationFreshAge`. |
-| **Where is the DaemonSet built?** | `pkg/controller/storagebasedremediationconfig_controller.go`: `buildDaemonSet`, `buildSBRAgentArgs`, `buildVolumeMounts`, `buildVolumes`, `buildNodeSelector`. |
-| **Where is StorageClass validated?** | API name format: `api/v1alpha1/storagebasedremediationconfig_types.go` — `ValidateSharedStorageClass`. RWX/provisioner check: `pkg/controller/storagebasedremediationconfig_controller.go` — `validateStorageClass`, `isRWXCompatibleProvisioner`, `testRWXSupport`. |
-| **Where are agent CLI flags defined?** | Names + path constants: `pkg/agent/flags.go`. `flag` declarations: `cmd/sbr-agent/main.go`. DaemonSet args: `buildSBRAgentArgs` in `storagebasedremediationconfig_controller.go`. |
-| **Where is node slot assignment?** | `pkg/sbdprotocol/nodemanager.go`: `NodeManager.GetNodeIDForNode` (assigns hash-based slot, persists to shared nodemap). |
-| **Where is the message protocol?** | `pkg/sbdprotocol/message.go`: slot layout, `NewHeartbeat`, `NewFence`, marshal/unmarshal. |
+| **Where is OOS taint applied?** | `internal/controller/storagebasedremediation_controller.go`: `ensureOutOfServiceTaint`. Delayed for fresh agent remediations: `isRemediationFresh`, `SBRAgentRemediationFreshAge`. |
+| **Where is the DaemonSet built?** | `internal/controller/storagebasedremediationconfig_controller.go`: `buildDaemonSet`, `buildSBRAgentArgs`, `buildVolumeMounts`, `buildVolumes`, `buildNodeSelector`. |
+| **Where is StorageClass validated?** | API name format: `api/v1alpha1/storagebasedremediationconfig_types.go` — `ValidateSharedStorageClass`. RWX/provisioner check: `internal/controller/storagebasedremediationconfig_controller.go` — `validateStorageClass`, `isRWXCompatibleProvisioner`, `testRWXSupport`. |
+| **Where are agent CLI flags defined?** | Names + path constants: `internal/agent/flags.go`. `flag` declarations: `cmd/sbr-agent/main.go`. DaemonSet args: `buildSBRAgentArgs` in `internal/controller/storagebasedremediationconfig_controller.go`. |
+| **Where is node slot assignment?** | `internal/sbdprotocol/nodemanager.go`: `NodeManager.GetNodeIDForNode` (assigns hash-based slot, persists to shared nodemap). |
+| **Where is the message protocol?** | `internal/sbdprotocol/message.go`: slot layout, `NewHeartbeat`, `NewFence`, marshal/unmarshal. |
 
 ---
 

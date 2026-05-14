@@ -64,4 +64,4 @@ After fencing, the remediation controller applies the **`node.kubernetes.io/out-
 - **Fencing runs in agents, not the operator** — the operator binary handles config, RBAC, and DaemonSet management only.
 - **`--sbr-device` is required** — watchdog-only mode without a shared SBR device was explicitly removed.
 - **File locking compatibility** — shared FS coordination depends on POSIX locking, which behaves differently across storage types (see `docs/sbr-coordination-strategies.md`).
-- **Doc drift** — Top-level README mentions CSI block volumes; the actual default path uses an RWX filesystem PVC with file-backed SBR devices. Trust the code (`pkg/controller/storagebasedremediationconfig_controller.go`) over the README.
+- **Doc drift** — Top-level README mentions CSI block volumes; the actual default path uses an RWX filesystem PVC with file-backed SBR devices. Trust the code (`internal/controller/storagebasedremediationconfig_controller.go`) over the README.

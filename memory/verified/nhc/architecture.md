@@ -7,7 +7,7 @@ This document explains **how the Node Health Check operator is structured**: wha
 ## How it works
 
 1. **One operator binary**  
-   The process starts a **controller-runtime Manager** (`main.go`). It hosts **metrics** (TLS, with either platform mTLS or bearer-token protection), **health/readiness probes**, **leader election** (so only one active leader reconciles these controllers), and a **validating admission webhook** for **`NodeHealthCheck`**.
+   The process starts a **controller-runtime Manager** (`cmd/main.go`). It hosts **metrics** (TLS, with either platform mTLS or bearer-token protection), **health/readiness probes**, **leader election** (so only one active leader reconciles these controllers), and a **validating admission webhook** for **`NodeHealthCheck`**.
 
 2. **Cluster capabilities**  
    At startup the operator detects **OpenShift**, presence of the **Machine API**, and whether the **control plane topology** is **allowed** for this operator. Those flags affect **webhook admission**, **whether the MachineHealthCheck reconciler is registered**, and **some safety checks** (for example etcd-related behaviour on OpenShift).
@@ -39,7 +39,7 @@ This document explains **how the Node Health Check operator is structured**: wha
    When **`escalatingRemediations`** is configured, templates are considered in **`order`**. The reconciler treats a step as **finished unsuccessfully** when the corresponding entry in **`status.unhealthyNodes[].remediations`** has **`timedOut` set**; until then, that step remains **current**. When all steps have **timed out**, there is **no template left** for that node and escalation stops. **Lease duration** logic accounts for the **current** step timeout and can include the **sum of prior steps’ timeouts** so the lock covers the whole chain.
 
 6. **`MachineHealthCheck` reconciler (conditional)**  
-   If the cluster has the **Machine API**, a **second** reconciler runs for **`MachineHealthCheck`** resources. It is **separate** from the **`NodeHealthCheck`** loop but shares some infrastructure (for example upgrade awareness and watch helpers as wired in `main.go`).
+   If the cluster has the **Machine API**, a **second** reconciler runs for **`MachineHealthCheck`** resources. It is **separate** from the **`NodeHealthCheck`** loop but shares some infrastructure (for example upgrade awareness and watch helpers as wired in `cmd/main.go`).
 
 7. **Initializer**  
    A startup runnable performs **install-time** tasks such as **RBAC aggregation**, **console** integration, and **ServiceMonitor** setup on OpenShift. It does **not** substitute for user-defined **`NodeHealthCheck`** CRs.

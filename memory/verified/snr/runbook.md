@@ -53,7 +53,7 @@ Inspect **Conditions** (**Processing**, **Succeeded**, **Disabled**), **`status.
 | **`customDsTolerations`** | Schedule agents on tainted nodes (e.g. infra). |
 | **`endpointHealthCheckUrl`** | Control-plane diagnostic HTTP check when workers cannot be used as peers. |
 
-Environment variables on the DaemonSet mirror many of these (see **`main.go`** **`getDurEnvVarOrDie`** / config reconciliation).
+Environment variables on the DaemonSet mirror many of these (see **`cmd/main.go`** **`getDurEnvVarOrDie`** / config reconciliation).
 
 ---
 
@@ -90,4 +90,4 @@ Do **not** assume two watchdog-owning remediations are safe on the same node. Pr
 
 ## 8. Upgrade / version
 
-Operator logs print **Go**, **Operator Version**, **Git Commit** (`main.go` **`printVersion`**). Use operator release notes for Kubernetes **CE** / **OpenShift** mapping.
+Operator logs print **Go**, **Operator Version**, **Git Commit** (`cmd/main.go` **`printVersion`**). Use operator release notes for Kubernetes **CE** / **OpenShift** mapping.

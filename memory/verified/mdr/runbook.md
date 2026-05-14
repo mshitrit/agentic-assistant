@@ -17,10 +17,10 @@ Practical checks for **Machine Deletion Remediation**: install sanity, active re
 
 | Topic | Note |
 |-------|------|
-| **Metrics** | **`main.go`** default **`:8080`**. |
-| **Health / readiness** | **`main.go`** default **`:8081`**. |
+| **Metrics** | **`cmd/main.go`** default **`:8080`**. |
+| **Health / readiness** | **`cmd/main.go`** default **`:8081`**. |
 | **HTTP/2** | Disabled on metrics TLS config hook (future-proofing). |
-| **Leader election** | Flag **`--leader-elect`**; **`LeaderElectionID`** in **`main.go`** may differ from **CSV** — compare live **Deployment** args. |
+| **Leader election** | Flag **`--leader-elect`**; **`LeaderElectionID`** in **`cmd/main.go`** may differ from **CSV** — compare live **Deployment** args. |
 | **Replicas** | Unlike some medik8s operators, **HA** is deployment-defined; if multiple pods run **without** leader election, behaviour may duplicate work—prefer matching **CSV** guidance. |
 
 ## Prerequisites

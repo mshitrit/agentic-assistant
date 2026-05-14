@@ -11,22 +11,22 @@ SNR ships as **one Go module** with **two runtime modes**:
 
 ---
 
-## Entry point (`main.go`)
+## Entry point (`cmd/main.go`)
 
 - **controller-runtime** `Manager`: metrics, health probes, optional **webhooks** on port **9443** (TLS; OLM may inject certs under `/apiserver.local.config/certificates`).
-- **`InitOutOfServiceTaintFlagsWithRetry`**: probes Kubernetes version to set **`IsOutOfServiceTaintSupported`** / **`IsOutOfServiceTaintGA`** (`pkg/utils/taints.go`) — affects **`Automatic`** remediation strategy selection.
+- **`InitOutOfServiceTaintFlagsWithRetry`**: probes Kubernetes version to set **`IsOutOfServiceTaintSupported`** / **`IsOutOfServiceTaintGA`** (`internal/utils/taints.go`) — affects **`Automatic`** remediation strategy selection.
 - **Manager path** registers webhooks for **`SelfNodeRemediationConfig`**, **`SelfNodeRemediationTemplate`**, **`SelfNodeRemediation`**; adds **`SelfNodeRemediationConfigReconciler`**; **`snrconfighelper`** default config initializer; **`template.Creator`**; **`SelfNodeRemediationReconciler`** with **`IsAgent: false`**.
-- **Agent path** sets **`MY_NODE_NAME`**; initializes **watchdog** (`pkg/watchdog`); updates **node annotations** (`is-reboot-capable.self-node-remediation.medik8s.io`, watchdog timeout); starts **`peers.Peers`**; **`apicheck.ApiConnectivityCheck`**; **`controlplane.Manager`** (for control-plane nodes); **`SelfNodeRemediationReconciler`** with **`IsAgent: true`** and **`Rebooter`**; **`peerhealth.Server`** (gRPC on **`HOST_PORT`** env, default port aligned with **`SelfNodeRemediationConfig.spec.hostPort`**, typically **30001**).
+- **Agent path** sets **`MY_NODE_NAME`**; initializes **watchdog** (`internal/watchdog`); updates **node annotations** (`is-reboot-capable.self-node-remediation.medik8s.io`, watchdog timeout); starts **`peers.Peers`**; **`apicheck.ApiConnectivityCheck`**; **`controlplane.Manager`** (for control-plane nodes); **`SelfNodeRemediationReconciler`** with **`IsAgent: true`** and **`Rebooter`**; **`peerhealth.Server`** (gRPC on **`HOST_PORT`** env, default port aligned with **`SelfNodeRemediationConfig.spec.hostPort`**, typically **30001**).
 
 ---
 
-## Remediation reconciler (`controllers/selfnoderemediation_controller.go`)
+## Remediation reconciler (`internal/controller/selfnoderemediation_controller.go`)
 
 ### Manager (`ReconcileManager`)
 
 - Loads **`SelfNodeRemediation`** CR; if **`SelfNodeRemediationConfig`** is missing → sets **`Disabled`** condition and stops.
 - Respects **NHC timeout** annotation **`remediation.medik8s.io/nhc-timed-out`**: stops remediation and updates conditions / cleanup.
-- Resolves **target node** via **`controllers/owner_and_name.go`**:
+- Resolves **target node** via **`internal/controller/owner_and_name.go`**:
   - Owner **NodeHealthCheck** → node name from **`remediation.medik8s.io/node-name`** or **CR `.metadata.name`**.
   - Owner **Machine** → **`Machine.status.nodeRef.name`** (OpenShift Machine API).
   - Else → annotation or CR name.
@@ -59,24 +59,24 @@ Implemented on **`SelfNodeRemediation.spec.remediationStrategy`**:
 
 ---
 
-## API connectivity and peers (`pkg/apicheck`, `pkg/peers`, `pkg/peerhealth`)
+## API connectivity and peers (`internal/apicheck`, `internal/peers`, `internal/peerhealth`)
 
 - Agent polls **`/readyz?exclude=shutdown`** on the API server on **`ApiCheckInterval`** with **`ApiServerTimeout`**.
 - Consecutive failures increment a counter; below **`MaxApiErrorThreshold`**, the node is still treated as healthy.
 - Above threshold, **worker peers** are consulted via **gRPC** (`peerhealth` client/server) to see if a **`SelfNodeRemediation`** exists for this node — peers answer using Kubernetes API + **`IsSNRMatching`** logic.
 - **`MinPeersForRemediation`**: if not enough peer addresses are discovered, the implementation **avoids** declaring unhealthy (reduces false-positive reboots). **Isolated** node scenarios may still mark unhealthy when peers cannot be contacted (**`UnHealthyBecauseNodeIsIsolated`**).
-- **`controlplane.Manager`** (`pkg/controlplane`): on control-plane nodes, “healthy?” combines worker peer responses with **diagnostics** (configurable **endpoint URL**, kubelet reachability, ping to other control-plane machines).
+- **`controlplane.Manager`** (`internal/controlplane`): on control-plane nodes, “healthy?” combines worker peer responses with **diagnostics** (configurable **endpoint URL**, kubelet reachability, ping to other control-plane machines).
 
 ---
 
-## Reboot path (`pkg/reboot`, `pkg/watchdog`)
+## Reboot path (`internal/reboot`, `internal/watchdog`)
 
 - **`WatchdogRebooter`**: prefers **stopping watchdog feed** to trigger hardware reset; if no watchdog, watchdog malfunction, or stuck **Triggered** state beyond **`TimeToAssumeRebootHasStarted` (30s)**, falls back to **software reboot** via **`nsenter`** + **`echo b > /proc/sysrq-trigger`**.
 - **`IsSoftwareRebootEnabled`** in **`SelfNodeRemediationConfig`** gates whether software reboot is allowed when watchdog cannot be used.
 
 ---
 
-## Safe timing (`pkg/reboot/calculator.go`)
+## Safe timing (`internal/reboot/calculator.go`)
 
 - **`GetRebootDuration`**: max of user **`safeTimeToAssumeNodeRebootedSeconds`** (if set and **not below** minimum) and a **calculated minimum** from config intervals, peer timeouts, **`MaxTimeForNoPeersResponse` (30s)** floor for peer interaction, and node **watchdog timeout** annotation **`self-node-remediation.medik8s.io/watchdog-timeout`**.
 
@@ -101,4 +101,4 @@ Implemented on **`SelfNodeRemediation.spec.remediationStrategy`**:
 ## Networking and TLS
 
 - Agents expose **gRPC** on **host port** ( **`HOST_PORT`** env / **`spec.hostPort`** ) for peer health checks — cluster firewall must allow **node ↔ node** traffic on that port.
-- **TLS** for gRPC uses certificates provided via **`pkg/certificates`** (Kubernetes Secret storage, reader from operator namespace).
+- **TLS** for gRPC uses certificates provided via **`internal/certificates`** (Kubernetes Secret storage, reader from operator namespace).

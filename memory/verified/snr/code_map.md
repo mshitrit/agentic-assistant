@@ -8,33 +8,35 @@
 
 ```
 self-node-remediation/
-├── main.go                      # Entry: manager vs agent split, manager/agent init
-├── api/v1alpha1/                # CRD types, webhooks, generated deepcopy
-├── controllers/                 # SelfNodeRemediation (+ config) reconcilers, owner/name helpers
-├── install/                     # Raw manifests (e.g. DaemonSet templates) applied by config controller
-├── config/                      # Kustomize / OLM bundle sources
-├── pkg/
-│   ├── apicheck/                # API /readyz polling + peer-based health decision
-│   ├── apply/                   # Merge/patch helpers
-│   ├── certificates/           # TLS material for gRPC (Secret-backed storage)
-│   ├── controlplane/           # Control-plane node diagnostics / reachability
-│   ├── peerhealth/             # gRPC server + client (protobuf), peer SNR CR checks
-│   ├── peers/                  # Peer address discovery + response aggregation
-│   ├── reboot/                 # Rebooter, reboot-duration calculator
-│   ├── render/                 # Template rendering helpers
-│   ├── snrconfighelper/        # Default SelfNodeRemediationConfig registration
-│   ├── template/               # SelfNodeRemediationTemplate creation
-│   ├── utils/                  # Taints, nodes, pods, namespaces, uptime, annotations
-│   └── watchdog/               # Linux watchdog abstraction (+ tests / fakes)
-├── bundle/                     # OLM bundle manifests
-└── vendor/                     # Vendored deps (read-only for navigation)
+├── cmd/
+│   └── main.go                      # Entry: manager vs agent split, manager/agent init
+├── api/v1alpha1/                    # CRD Go types + generated deepcopy (not admission webhooks)
+├── internal/
+│   ├── controller/                  # SelfNodeRemediation (+ config) reconcilers, owner/name helpers
+│   ├── webhook/v1alpha1/            # Admission webhooks for CRDs
+│   ├── apicheck/                    # API /readyz polling + peer-based health decision
+│   ├── apply/                       # Merge/patch helpers
+│   ├── certificates/                # TLS material for gRPC (Secret-backed storage)
+│   ├── controlplane/                # Control-plane node diagnostics / reachability
+│   ├── peerhealth/                  # gRPC server + client (protobuf), peer SNR CR checks
+│   ├── peers/                       # Peer address discovery + response aggregation
+│   ├── reboot/                      # Rebooter, reboot-duration calculator
+│   ├── render/                      # Template rendering helpers
+│   ├── snrconfighelper/             # Default SelfNodeRemediationConfig registration
+│   ├── template/                    # SelfNodeRemediationTemplate creation
+│   ├── utils/                       # Taints, nodes, pods, namespaces, uptime, annotations
+│   └── watchdog/                    # Linux watchdog abstraction (+ tests / fakes)
+├── install/                         # Raw manifests (e.g. DaemonSet templates) applied by config controller
+├── config/                          # Kustomize / OLM bundle sources
+├── bundle/                          # OLM bundle manifests
+└── vendor/                          # Vendored deps (read-only for navigation)
 ```
 
 ---
 
 ## Key files
 
-### `main.go`
+### `cmd/main.go`
 
 | Concern | Description |
 |---------|-------------|
@@ -42,7 +44,7 @@ self-node-remediation/
 | **`initSelfNodeRemediationAgent`** | Watchdog; node annotations; **`peers.New`**; **`apicheck.New`**; **`controlplane.NewManager`**; **`SelfNodeRemediationReconciler`** `IsAgent=true` + **`Rebooter`**; **`peerhealth.NewServer`**. |
 | **Flags** | `--is-manager`, `--metrics-bind-address`, `--health-probe-bind-address`, `--leader-elect`, `--enable-http2`. |
 
-### `controllers/selfnoderemediation_controller.go`
+### `internal/controller/selfnoderemediation_controller.go`
 
 | Concern | Description |
 |---------|-------------|
@@ -51,14 +53,14 @@ self-node-remediation/
 | **Taints** | **`NodeNoScheduleTaint`** (`remediation.medik8s.io/...`); **`OutOfServiceTaint`** (`node.kubernetes.io/out-of-service`). |
 | **`getRuntimeStrategy`** | **`Automatic`** → **`OutOfServiceTaint`** if **`IsOutOfServiceTaintGA`**, else **`ResourceDeletion`**. |
 
-### `controllers/owner_and_name.go`
+### `internal/controller/owner_and_name.go`
 
 | Function | Description |
 |----------|-------------|
 | **`IsSNRMatching`** | Whether SNR applies to this agent’s node / Machine. |
 | **`getNodeName`**, **`getNodeNameFromMachine`** | Resolve unhealthy node name from NHC vs Machine ownership. |
 
-### `controllers/selfnoderemediationconfig_controller.go`
+### `internal/controller/selfnoderemediationconfig_controller.go`
 
 Installs/updates **DaemonSet** and related install artifacts from **`./install`**, consumes **`RebootDurationCalculator`**, watches **`SelfNodeRemediationConfig`**.
 
@@ -69,28 +71,31 @@ Installs/updates **DaemonSet** and related install artifacts from **`./install`*
 | `selfnoderemediation_types.go` | **`SelfNodeRemediation`**, strategies, condition types. |
 | `selfnoderemediationconfig_types.go` | Config fields + defaults (`ConfigCRName`, watchdog path, timings). |
 | `selfnoderemediationtemplate_types.go` | Template CRD + **`NewRemediationTemplates`**. |
-| `*_webhook.go` | Admission defaults/validation for CRDs. |
 
-### `pkg/apicheck/check.go`
+### `internal/webhook/v1alpha1/`
+
+Admission defaults/validation for CRDs (e.g. `*_webhook.go` files — layout may vary by branch).
+
+### `internal/apicheck/check.go`
 
 **`ApiConnectivityCheck`**: **`/readyz?exclude=shutdown`** loop; **`isConsideredHealthy`** integrates **`peers`** + **`controlplane.Manager`**; optional self-reboot via **`Rebooter`**.
 
-### `pkg/peerhealth/server.go` / `client.go`
+### `internal/peerhealth/server.go` / `client.go`
 
-gRPC **PeerHealth** service: answers whether requesting node should be considered unhealthy based on **`SelfNodeRemediation`** existence (uses **`controllers.IsSNRMatching`**).
+gRPC **PeerHealth** service: answers whether requesting node should be considered unhealthy based on **`SelfNodeRemediation`** existence (uses **`internal/controller`** matching helpers such as **`IsSNRMatching`**).
 
-### `pkg/reboot/`
+### `internal/reboot/`
 
 | File | Role |
 |------|------|
 | `rebooter.go` | **`WatchdogRebooter`**, **`sysrq-trigger`** software reboot fallback. |
 | `calculator.go` | **`GetRebootDuration`**, **`MaxTimeForNoPeersResponse`**. |
 
-### `pkg/utils/taints.go`
+### `internal/utils/taints.go`
 
 Kubernetes version → **`IsOutOfServiceTaintSupported`** / **`IsOutOfServiceTaintGA`**.
 
-### `pkg/utils/annotations.go`
+### `internal/utils/annotations.go`
 
 Node annotations **`is-reboot-capable.self-node-remediation.medik8s.io`**, **`self-node-remediation.medik8s.io/watchdog-timeout`**.
 

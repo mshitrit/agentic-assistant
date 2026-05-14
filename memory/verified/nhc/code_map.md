@@ -6,7 +6,7 @@ This document maps **concepts** to **paths** in the upstream operator repo **`gi
 
 ## How to use it
 
-- **Entry and wiring** — `main.go`  
+- **Entry and wiring** — `cmd/main.go`  
   Starts the **Manager** (metrics TLS, webhooks, leader election), builds **cluster capabilities**, **upgrade checker**, **MHC checker** (channel into NHC), registers **`NodeHealthCheck`** reconciler, conditionally **`MachineHealthCheck`** reconciler, **validating webhook**, **initializer**, metrics setup.
 
 - **API types** — `api/v1alpha1/`  
@@ -14,44 +14,44 @@ This document maps **concepts** to **paths** in the upstream operator repo **`gi
   - `nodehealthcheck_webhook.go` — admission rules, immutability while remediating.  
   - `groupversion_info.go` — group **`remediation.medik8s.io`**, **`v1alpha1`**.
 
-- **NHC reconcile** — `controllers/nodehealthcheck_controller.go`  
+- **NHC reconcile** — `internal/controller/nodehealthcheck_controller.go`  
   Main loop: lease, template validation, watches, node selection, unhealthy classification, upgrade/pause/storm/minHealthy gates, healthy handling, **remediate** (CP, leases, timeouts, escalation, old-CR alert).
 
-- **Template / escalation selection** — `controllers/resources/templates.go`  
+- **Template / escalation selection** — `internal/controller/resources/templates.go`  
   **`GetCurrentTemplateWithTimeout`**, **`ValidateTemplates`**, **`NoTemplateLeftError`**, template fetch and **Metal3** namespace check.
 
-- **CR lifecycle / leases** — `controllers/resources/manager.go`, `lease.go`, `watch.go`  
+- **CR lifecycle / leases** — `internal/controller/resources/manager.go`, `internal/controller/resources/lease.go`, `internal/controller/resources/watch.go`  
   Create/list/update remediation CRs, **WatchManager** dynamic watches, lease errors.
 
-- **Status helpers** — `controllers/resources/status.go`  
+- **Status helpers** — `internal/controller/resources/status.go`  
   **`unhealthyNodes`**, remediation entries, metrics hooks.
 
-- **MHC coexistence** — `controllers/mhc/checker.go`  
+- **MHC coexistence** — `internal/controller/mhc/checker.go`  
   List MHCs, **NeedDisableNHC**, **NeedIgnoreNode** (Terminating).
 
-- **Cluster** — `controllers/cluster/capabilities.go`, `upgrade_checker.go`  
+- **Cluster** — `internal/controller/cluster/capabilities.go`, `upgrade_checker.go`  
   OpenShift / Machine API / topology; upgrade deferral.
 
-- **Utilities** — `controllers/utils/`  
+- **Utilities** — `internal/controller/utils/`  
   **`utils.go`** — **`GetAllRemediationTemplates`**, **`GetRemediationDuration`**, **`GetNodeNameFromCR`**, mappers, etc.  
   **`mapper.go`** — enqueue NHC from Node / MHC events.  
   **`annotations/`** — e.g. **template-name** annotation for CRs.
 
-- **MachineHealthCheck controller** — `controllers/machinehealthcheck_controller.go`  
+- **MachineHealthCheck controller** — `internal/controller/machinehealthcheck_controller.go`  
   OpenShift **MHC** reconciliation when Machine API present.
 
-- **Bootstrapping** — `controllers/initializer/init.go`  
+- **Bootstrapping** — `internal/controller/initializer/init.go`  
   RBAC aggregation, console plugin, ServiceMonitor.
 
-- **Feature gates** — `controllers/featuregates/accessor.go`  
-  Used from MHC wiring in `main.go`.
+- **Feature gates** — `internal/controller/featuregates/accessor.go`  
+  Used from MHC wiring in `cmd/main.go`.
 
 - **Metrics** — `metrics/`, `metrics/tls/`  
   Registration and TLS helpers for metrics.
 
 ## Important details
 
-- **Generated / vendor** — prefer reading **`api/`** and **`controllers/`**; **`vendor/`** is third-party.  
+- **Generated / vendor** — prefer reading **`api/`** and **`internal/controller/`**; **`vendor/`** is third-party.  
 - **E2E** — `e2e/` for behaviour examples, not product docs.
 
 ## Related pieces

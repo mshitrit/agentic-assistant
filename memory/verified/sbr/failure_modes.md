@@ -16,12 +16,12 @@ This document describes failure scenarios, how they are detected, what the syste
 | `sbrUnhealthyConditionStaleAge` | `(MaxConsecutiveFailures+1) × heartbeatInterval + 5s` ≈ **125s** at defaults | `cmd/sbr-agent/main.go` |
 | `RemediationCheckTimeout` | `5s` — timeout for CR existence check | `cmd/sbr-agent/main.go` |
 | `SBRAgentRemediationGracePeriod` | `3 min` — after `SBRStorageUnhealthy=Unknown`, wait before setting `True` again | `cmd/sbr-agent/main.go` |
-| Block device I/O timeout | `--io-timeout` default **2s**; min 1s, max 10m | `cmd/sbr-agent/main.go`, `pkg/blockdevice` |
-| Block device retries | 3 | `pkg/blockdevice/blockdevice.go` |
-| Watchdog pet retries | 2 | `pkg/watchdog/watchdog.go` |
-| Fencing completion timeout | `Spec.TimeoutSeconds` default **60s** | `pkg/controller/storagebasedremediation_controller.go` |
+| Block device I/O timeout | `--io-timeout` default **2s**; min 1s, max 10m | `cmd/sbr-agent/main.go`, `internal/blockdevice` |
+| Block device retries | 3 | `internal/blockdevice/blockdevice.go` |
+| Watchdog pet retries | 2 | `internal/watchdog/watchdog.go` |
+| Fencing completion timeout | `Spec.TimeoutSeconds` default **60s** | `internal/controller/storagebasedremediation_controller.go` |
 | `maxHeartbeatAge` (stale heartbeat = fenced) | **60s** fixed | `hasNodeStoppedHeartbeating` |
-| Config controller API retries | 3, backoff 500ms–10s | `pkg/controller/storagebasedremediationconfig_controller.go` |
+| Config controller API retries | 3, backoff 500ms–10s | `internal/controller/storagebasedremediationconfig_controller.go` |
 
 ---
 

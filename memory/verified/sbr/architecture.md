@@ -13,12 +13,12 @@ SBR provides **cluster node coordination and fencing over shared storage**: each
 | `cmd/main.go` | **SBR operator** — controller-runtime manager for `StorageBasedRemediationConfig` + validating webhook |
 | `cmd/sbr-agent/main.go` | **SBR agent** — watchdog + shared-device loops + embedded `StorageBasedRemediation` reconciler |
 | `api/v1alpha1/` | CRD Go types (`StorageBasedRemediation`, `StorageBasedRemediationConfig`, `StorageBasedRemediationTemplate`), webhooks, deepcopy |
-| `pkg/controller/` | `StorageBasedRemediationConfigReconciler` (operator); `SBRRemediationReconciler` (used by agent) |
-| `pkg/sbdprotocol/` | Slot layout, heartbeat/fence messages, `NodeManager` (node name ↔ slot ID, shared nodemap) |
-| `pkg/blockdevice/` | Block I/O with timeouts |
-| `pkg/watchdog/` | Linux watchdog (with softdog fallback in agent) |
-| `pkg/agent/` | Shared flags/constants (device paths, mount dir `/dev/sbr`, file names) |
-| `pkg/retry/` | Shared exponential backoff for API and I/O |
+| `internal/controller/` | `StorageBasedRemediationConfigReconciler` (operator); `SBRRemediationReconciler` (used by agent) |
+| `internal/sbdprotocol/` | Slot layout, heartbeat/fence messages, `NodeManager` (node name ↔ slot ID, shared nodemap) |
+| `internal/blockdevice/` | Block I/O with timeouts |
+| `internal/watchdog/` | Linux watchdog (with softdog fallback in agent) |
+| `internal/agent/` | Shared flags/constants (device paths, mount dir `/dev/sbr`, file names) |
+| `internal/retry/` | Shared exponential backoff for API and I/O |
 
 ---
 
@@ -132,4 +132,4 @@ Wraps a `StorageBasedRemediation`-shaped template for external remediation integ
 
 ---
 
-> **Doc caveat:** The README emphasizes CSI block PVs. The actual implemented path uses RWX filesystem PVCs with regular files as SBR devices. Prefer `StorageBasedRemediationConfig` spec + `pkg/agent` constants as ground truth.
+> **Doc caveat:** The README emphasizes CSI block PVs. The actual implemented path uses RWX filesystem PVCs with regular files as SBR devices. Prefer `StorageBasedRemediationConfig` spec + `internal/agent` constants as ground truth.

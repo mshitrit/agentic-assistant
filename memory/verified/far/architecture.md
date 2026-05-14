@@ -10,7 +10,7 @@ This document explains **how the FAR operator runs**: startup, **`FenceAgentsRem
 - **Kinds:** **`FenceAgentsRemediation`** (short **`far`**), **`FenceAgentsRemediationTemplate`** (short **`fartemplate`**)
 - **Scope:** **Namespaced**. **Secrets** referenced by a CR are read from the **same namespace** as that CR.
 
-## Operator startup (`main.go`)
+## Operator startup (`cmd/main.go`)
 
 The process starts a standard **controller-runtime** manager: **metrics**, **health/readiness** probes, and **admission webhooks** (TLS; OLM installs often inject certificates under **`/apiserver.local.config/certificates`**). **HTTP/2** for metrics/webhooks is optional; when disabled, webhook TLS is typically limited to **HTTP/1.1** for hardening.
 
@@ -20,9 +20,9 @@ A shared **`Executer`** is constructed and passed to both the **FAR** reconciler
 
 Both reconcilers and **mutating/validating webhooks** for FAR and Template are registered.
 
-**Leader election** is controlled by a **`--leader-elect`** flag. The **shipped** OLM deployment usually runs **two replicas** with leader election enabled so only one reconciler is active at a time—the **default in `main.go`** may differ from what your **ClusterServiceVersion** actually sets. Leader election ID in code: **`cb305759.medik8s.io`**.
+**Leader election** is controlled by a **`--leader-elect`** flag. The **shipped** OLM deployment usually runs **two replicas** with leader election enabled so only one reconciler is active at a time—the **default in `cmd/main.go`** may differ from what your **ClusterServiceVersion** actually sets. Leader election ID in code: **`cb305759.medik8s.io`**.
 
-## FAR reconciliation (`controllers/fenceagentsremediation_controller.go`)
+## FAR reconciliation (`internal/controller/fenceagentsremediation_controller.go`)
 
 Each loop tries to move one **`FenceAgentsRemediation`** forward safely.
 
@@ -32,7 +32,7 @@ Each loop tries to move one **`FenceAgentsRemediation`** forward safely.
 4. **NHC timeout:** if **`remediation.medik8s.io/nhc-timed-out`** is present, FAR stops driving work: it removes any **executor** routine for this object’s UID. If the CR is **deleting**, it runs **deletion cleanup** (taints + finalizer); otherwise it marks remediation **interrupted by NHC** and stops.
 5. **Finalizer:** if the FAR is not deleting and does not yet have **`fence-agents-remediation.medik8s.io/far-finalizer`**, FAR adds it, records **remediation started**, emits events, and **requeues immediately** so the next pass continues with stable metadata.
 6. **Deleting:** if the finalizer is present and **DeletionTimestamp** is set, and **Succeeded** was not reached, FAR cancels executor work, then runs **deletion cleanup**.
-7. **Remediation taint:** FAR ensures the node has **`remediation.medik8s.io/fence-agents-remediation:NoSchedule`** (`pkg/utils/taints.go`).
+7. **Remediation taint:** FAR ensures the node has **`remediation.medik8s.io/fence-agents-remediation:NoSchedule`** (`internal/utils/taints.go`).
 8. **Fence phase:** when **Processing** is true but **FenceAgentActionSucceeded** is not yet true: if a fence command is **already running** for this UID, return; otherwise **`BuildFenceAgentParams`**, assemble argv, call **`AsyncExecute`** with **`retrycount`**, **`retryinterval`**, and **`timeout`** from the spec, and record that the fence agent was executed.
 9. **Post-fence:** when **FenceAgentActionSucceeded** is true and **Succeeded** is not yet true, FAR applies **`spec.remediationStrategy`**:
    - **`ResourceDeletion`** or **empty string** (legacy objects): delete pods on the node via **`commonResources.DeletePods`**, then mark **remediation finished successfully**.
@@ -49,17 +49,17 @@ If **OutOfServiceTaint** was used, FAR **removes** that taint first. It then **r
 
 After **`Status().Update`**, the reconciler **polls** (up to a few seconds) until **`lastUpdateTime`** reflects the write, so the next reconcile does not act on **stale** conditions.
 
-## Fence executor (`pkg/cli/cliexecuter.go`)
+## Fence executor (`internal/cli/cliexecuter.go`)
 
 **`AsyncExecute`** starts **one background run per FAR UID**; a second call for the same UID is ignored.
 
 The command runs under **exponential backoff**: **`retryCount`** attempts, **`retryInterval`** spacing, each attempt bounded by **`timeout`** via **`exec.CommandContext`**.
 
-When the command finishes, the executor finds the FAR by **UID** (listing FARs), maps the outcome to **succeeded**, **failed**, or **timed out**, updates **conditions** via **`pkg/utils/conditions.go`**, and **updates status** with retries on conflict.
+When the command finishes, the executor finds the FAR by **UID** (listing FARs), maps the outcome to **succeeded**, **failed**, or **timed out**, updates **conditions** via **`internal/utils/conditions.go`**, and **updates status** with retries on conflict.
 
 **`SyncExecute`** supports the template reconciler’s **`--action=status`** checks (fixed short timeout there, separate from FAR spec timeouts).
 
-## Conditions (`pkg/utils/conditions.go`)
+## Conditions (`internal/utils/conditions.go`)
 
 - **Processing** — true after remediation has **started** (finalizer path); false when finished successfully, failed, timed out, node not found, or interrupted by NHC.
 - **FenceAgentActionSucceeded** — true when the fence **CLI** succeeded.
@@ -67,11 +67,11 @@ When the command finishes, the executor finds the FAR by **UID** (listing FARs),
 
 Reason strings include **RemediationStarted**, **FenceAgentSucceeded**, **FenceAgentFailed**, **FenceAgentTimedOut**, **RemediationFinishedSuccessfully**, **RemediationFinishedNodeNotFound**, **RemediationInterruptedByNHC**.
 
-## Parameters, secrets, admission (`api/v1alpha1/fenceagentsremediation_params.go`, webhooks, `pkg/validation`, `pkg/template`)
+## Parameters, secrets, admission (`api/v1alpha1/fenceagentsremediation_params.go`, webhooks, `internal/validation`, `internal/template`)
 
 **`BuildFenceAgentParams`** merges **SharedParameters** and **NodeParameters** with data from **SharedSecretName** and **NodeSecretNames** (same namespace as the FAR). **Per-node** values override **shared** keys. Secret keys must not **duplicate** an already-set parameter key.
 
-String values may use **Go template** syntax with **`{{.NodeName}}`** (`pkg/template/template.go`).
+String values may use **Go template** syntax with **`{{.NodeName}}`** (`internal/template/template.go`).
 
 **`action` / `--action`** must be **`reboot`** or **`off`**. If still absent after merge, the builder **adds `--action=reboot`**.
 
@@ -83,7 +83,7 @@ The old default **`fence-agents-credentials-shared`** is handled by **mutating**
 
 The **Template** mutator also sets **`remediation.medik8s.io/multiple-templates-supported`** when unset (medik8s common annotation).
 
-## Template reconciliation (`controllers/fenceagentsremediationtemplate_controller.go`)
+## Template reconciliation (`internal/controller/fenceagentsremediationtemplate_controller.go`)
 
 Optionally, for each **FenceAgentsRemediationTemplate**, the operator validates fence **reachability / credentials** by running **`fence_<agent> --action status ...`**, reusing parameter building but **avoiding** duplicate action flags.
 

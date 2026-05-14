@@ -17,8 +17,8 @@ FAR CRs and referenced **Secrets** are **namespaced** (same namespace for the Se
 
 | Topic | Note |
 |-------|------|
-| **Metrics** | Default bind **`:8080`** (`main.go`); scrape via your **Service** / **ServiceMonitor** if enabled in the bundle. |
-| **Health / readiness** | Default **`:8081`** (`main.go`). |
+| **Metrics** | Default bind **`:8080`** (`cmd/main.go`); scrape via your **Service** / **ServiceMonitor** if enabled in the bundle. |
+| **Health / readiness** | Default **`:8081`** (`cmd/main.go`). |
 | **Webhooks** | TLS often uses certs under **`/apiserver.local.config/certificates`** when OLM injects them; **HTTP/2** for webhooks may be disabled for hardening—see **`architecture.md`**. |
 | **Leader election & replicas** | **`--leader-elect`** is a **flag**; the **shipped CSV** usually runs **two** operator replicas with leader election so **one** active reconciler holds the lease. If behaviour looks duplicated or “stuck between pods”, check the **Deployment** args. |
 

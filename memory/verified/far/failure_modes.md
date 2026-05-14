@@ -4,7 +4,7 @@
 
 This is a **symptom-first** guide: what you might see when something goes wrong with FAR, and what usually causes it. Use it with **`architecture.md`** (how it works) and **`runbook.md`** (commands).
 
-Behaviour references **`controllers/fenceagentsremediation_controller.go`**, **`controllers/fenceagentsremediationtemplate_controller.go`**, **`api/v1alpha1/fenceagentsremediation_params.go`**, **`pkg/cli/cliexecuter.go`**, **`pkg/utils/conditions.go`**, unless noted.
+Behaviour references **`internal/controller/fenceagentsremediation_controller.go`**, **`internal/controller/fenceagentsremediationtemplate_controller.go`**, **`api/v1alpha1/fenceagentsremediation_params.go`**, **`internal/cli/cliexecuter.go`**, **`internal/utils/conditions.go`**, unless noted.
 
 ## Governing constants (selected)
 

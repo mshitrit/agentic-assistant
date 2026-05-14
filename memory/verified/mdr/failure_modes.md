@@ -4,7 +4,7 @@
 
 **Symptom-first** guide for MDR: what you might see when something goes wrong, and what the controller does. Use with **`architecture.md`** and **`runbook.md`**.
 
-Behaviour references **`controllers/machinedeletionremediation_controller.go`**, **`api/v1alpha1/machinedeletionremediation_types.go`**, and **medik8s/common** annotations/conditions unless noted.
+Behaviour references **`internal/controller/machinedeletionremediation_controller.go`**, **`api/v1alpha1/machinedeletionremediation_types.go`**, and **medik8s/common** annotations/conditions unless noted.
 
 ## Governing constants (selected)
 

@@ -15,8 +15,8 @@ Commands and fields for **NodeMaintenance** day-2 ops. Behaviour details: **`arc
 
 | Topic | Note |
 |-------|------|
-| **Health / readiness** | Default probe bind **`:8081`** (`main.go`). |
-| **Metrics** | Flag **`:8080`** exists; confirm **`Manager`** **Metrics** wiring in your build — source **`main.go` may omit `Metrics` in `ctrl.Options`**. |
+| **Health / readiness** | Default probe bind **`:8081`** (`cmd/main.go`). |
+| **Metrics** | Flag **`:8080`** exists; confirm **`Manager`** **Metrics** wiring in your build — source **`cmd/main.go` may omit `Metrics` in `ctrl.Options`**. |
 | **Webhook** | TLS under **`/apiserver.local.config/certificates`** when OLM injects certs; port **9443** in webhook options helper pattern. |
 | **Leader election** | **`--leader-elect`** defaults **false** in code; CSV may override. ID **`135b1886.medik8s.io`**. |
 

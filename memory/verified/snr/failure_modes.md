@@ -1,6 +1,6 @@
 # Self Node Remediation (SNR) — Failure Modes
 
-Behaviour references **`controllers/selfnoderemediation_controller.go`**, **`pkg/apicheck/check.go`**, **`pkg/reboot/`**, unless noted.
+Behaviour references **`internal/controller/selfnoderemediation_controller.go`**, **`internal/apicheck/check.go`**, **`internal/reboot/`**, unless noted.
 
 ---
 
@@ -8,10 +8,10 @@ Behaviour references **`controllers/selfnoderemediation_controller.go`**, **`pkg
 
 | Constant | Value | Where |
 |----------|-------|-------|
-| **`OutOfServiceTimeoutDuration`** | **1 minute** — window after **`timeAssumedRebooted`** for out-of-service strategy housekeeping | `controllers/selfnoderemediation_controller.go` |
-| **`TimeToAssumeRebootHasStarted`** | **30s** — watchdog reboot considered stuck if no progress | `pkg/reboot/rebooter.go` |
-| **`MaxTimeForNoPeersResponse`** | **30s** — floor for peer timing in reboot-duration calculation; also used in api-check staleness | `pkg/reboot/calculator.go`, `pkg/apicheck/check.go` |
-| **`SNRFinalizer`** | `self-node-remediation.medik8s.io/snr-finalizer` | `controllers/selfnoderemediation_controller.go` |
+| **`OutOfServiceTimeoutDuration`** | **1 minute** — window after **`timeAssumedRebooted`** for out-of-service strategy housekeeping | `internal/controller/selfnoderemediation_controller.go` |
+| **`TimeToAssumeRebootHasStarted`** | **30s** — watchdog reboot considered stuck if no progress | `internal/reboot/rebooter.go` |
+| **`MaxTimeForNoPeersResponse`** | **30s** — floor for peer timing in reboot-duration calculation; also used in api-check staleness | `internal/reboot/calculator.go`, `internal/apicheck/check.go` |
+| **`SNRFinalizer`** | `self-node-remediation.medik8s.io/snr-finalizer` | `internal/controller/selfnoderemediation_controller.go` |
 
 Config defaults (override via **`SelfNodeRemediationConfig`**): **`apiCheckInterval`** default **15s**, **`apiServerTimeout`** **5s**, **`maxApiErrorThreshold`** **3**, **`peerUpdateInterval`** default **15m**, **`hostPort`** default **30001**, **`minPeersForRemediation`** default **1**.
 
@@ -58,7 +58,7 @@ Config defaults (override via **`SelfNodeRemediationConfig`**): **`apiCheckInter
 
 - **Detection:** **`ApiConnectivityCheck`** fails **`/readyz`** repeatedly.
 - **Behaviour:** Until **`MaxApiErrorThreshold`**, errors ignored. Above threshold, **peer quorum** determines if node is unhealthy; **`MinPeersForRemediation`** not met → node may be treated as **healthy** to avoid wrong reboot (**`HealthyBecauseNoPeersWereFound`**). **Isolated** node with **zero** peers and **`MinPeersForRemediation` > 0** → **unhealthy** (**`UnHealthyBecauseNodeIsIsolated`**).
-- **Outcome:** Possible **self-reboot** via **`Rebooter`** only when **`isConsideredHealthy()`** is false — see **`pkg/apicheck/check.go`**.
+- **Outcome:** Possible **self-reboot** via **`Rebooter`** only when **`isConsideredHealthy()`** is false — see **`internal/apicheck/check.go`**.
 
 ### 3.3 Control-plane diagnostics (agent)
 

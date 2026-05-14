@@ -20,22 +20,22 @@ Runtime behaviour of **Node Maintenance Operator**: **`NodeMaintenance`** reconc
 - **Create**
   - Node with **`spec.nodeName`** must exist.
   - No other **`NodeMaintenance`** may reference the same **`nodeName`**.
-  - On **OpenShift** (`isOpenShift` from **`utils.NewOpenshiftValidator`** in **`main.go`**), if the node is **control-plane**, **`etcd.IsEtcdDisruptionAllowed`** must allow disruption (uses **etcd** guard PDB logic in **`openshift-etcd`** namespace — **etcd-guard-pdb** / **etcd-quorum-guard** naming in webhook constants).
+  - On **OpenShift** (`isOpenShift` from **`utils.NewOpenshiftValidator`** in **`cmd/main.go`**), if the node is **control-plane**, **`etcd.IsEtcdDisruptionAllowed`** must allow disruption (uses **etcd** guard PDB logic in **`openshift-etcd`** namespace — **etcd-guard-pdb** / **etcd-quorum-guard** naming in webhook constants).
 - **Non-OpenShift:** control-plane **quorum** webhook check is **skipped** (log notes no etcd PDB).
 - **Update:** changing **`spec.nodeName`** is **forbidden**.
 - **Delete:** validator runs but returns **no error** (logging only).
 
-## Operator startup (`main.go`)
+## Operator startup (`cmd/main.go`)
 
 - **Scheme:** core + **`api/v1beta1`**
 - **Manager:** **Webhook** server (TLS from **`/apiserver.local.config/certificates`** when present; **HTTP/2** optional via **`--enable-http2`**, otherwise disabled on TLS for CVE mitigation)
 - **Leader election:** **`--leader-elect`** (default **false** in source), **`LeaderElectionID`:** **`135b1886.medik8s.io`**
 - **Runnable:** **`leaseManagerInitializer`** calls **`lease.NewManager`** with **`controllers.LeaseHolderIdentity`** (**`node-maintenance`**) after start
 - **Probes:** **`--health-probe-bind-address`** (default **`:8081`**)
-- **Metrics:** **`--metrics-bind-address`** (default **`:8080`**) is **defined** but **`Metrics` is not set on `ctrl.Options`** in the referenced **`main.go`** — confirm whether your build/CSV wires metrics separately
+- **Metrics:** **`--metrics-bind-address`** (default **`:8080`**) is **defined** but **`Metrics` is not set on `ctrl.Options`** in the referenced **`cmd/main.go`** — confirm whether your build/CSV wires metrics separately
 - **Webhook registration:** **`NodeMaintenance.SetupWebhookWithManager(isOpenShift, mgr)`**
 
-## NodeMaintenance reconciler (`controllers/nodemaintenance_controller.go`)
+## NodeMaintenance reconciler (`internal/controller/nodemaintenance_controller.go`)
 
 ### High-level order
 
@@ -67,7 +67,7 @@ Runtime behaviour of **Node Maintenance Operator**: **`NodeMaintenance`** reconc
 - **`Timeout`:** **`DrainerTimeout`** = **30s**
 - **`OnPodDeletedOrEvicted`** logs via **klog**
 
-### Taints (`controllers/taint.go`)
+### Taints (`internal/controller/taint.go`)
 
 Maintenance applies **two** **NoSchedule** taints: **`node.kubernetes.io/unschedulable`** and **`medik8s.io/drain`**, using JSON patch **test+add/replace** on **`spec.taints`**.
 
@@ -76,7 +76,7 @@ Maintenance applies **two** **NoSchedule** taints: **`node.kubernetes.io/unsched
 - **`onReconcileError` / `onReconcileErrorWithRequeue`:** set **`lastError`**, **`lastUpdate`**, refresh **pending** pod lists and **drainProgress** when **`nodeName` set**.
 - Special case: error text equals **`nodes "%s" not found`** → return **no error** (no infinite requeue).
 
-## Lease constants (`controllers/nodemaintenance_controller.go`)
+## Lease constants (`internal/controller/nodemaintenance_controller.go`)
 
 - **`LeaseHolderIdentity`:** **`node-maintenance`**
 - **`LeaseDuration`:** **1 hour**
