@@ -13,6 +13,8 @@ CLOUD_ID    = config["CLOUD_ID"]
 ISSUE_KEY   = config.get("ISSUE_KEY", "").strip()
 GCP_PROJECT = config["GCP_PROJECT_ID"]
 GCP_REGION  = config["GCP_REGION"]
+PR_REVIEW_MODEL = config.get("PR_REVIEW_MODEL", "claude-opus-4-5")
+PR_REVIEW_MAX_TOKENS = int(config.get("PR_REVIEW_MAX_TOKENS", "8192"))
 
 OPERATORS: dict[str, dict] = {}
 for _k, _v in config.items():

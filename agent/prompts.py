@@ -148,3 +148,69 @@ def build_prompt(context: dict, mode: AgentMode = AgentMode.JIRA, operator: str 
     if mode == AgentMode.SLACK:
         return build_slack_prompt(context.get("title", ""), operator=operator, op_name=op_name)
     return build_jira_prompt(context, operator=operator, op_name=op_name)
+
+
+PR_REVIEW_RUBRIC = """\
+You are performing a thorough code review of a pull/merge request.
+
+Review the provided diff (same as the hosting platform "Files changed" / "Changes" tab).
+The merge target branch is stated in the request header when available.
+
+Structure your review exactly as:
+
+## Summary
+(2-4 sentences: what the change does)
+
+## Correctness
+(Logic bugs, edge cases, error handling. Label each finding: Blocker, Major, Minor)
+
+## Design
+(Structure, separation of concerns, consistency with existing patterns)
+
+## Tests
+(Missing or weak coverage)
+
+## Nits
+(Style, naming, docs; non-blocking)
+
+Each finding MUST cite file path and line number(s) when possible.
+"""
+
+
+def pr_review_rubric() -> str:
+    return PR_REVIEW_RUBRIC
+
+
+def build_pr_review_prompt(
+    *,
+    platform: str,
+    reference: str,
+    url: str = "",
+    title: str = "",
+    target_branch: str = "",
+    source_branch: str = "",
+    meta_json: str = "",
+    diff: str = "",
+    extra_context: str = "",
+) -> str:
+    parts = [
+        PR_REVIEW_RUBRIC,
+        "---",
+        "## Request",
+        f"- **Platform:** {platform}",
+        f"- **Reference:** {reference}",
+    ]
+    if url:
+        parts.append(f"- **URL:** {url}")
+    if title:
+        parts.append(f"- **Title:** {title}")
+    if target_branch:
+        parts.append(f"- **Merge target branch:** {target_branch}")
+    if source_branch:
+        parts.append(f"- **Source branch:** {source_branch}")
+
+    parts.append(f"\n### Metadata (JSON)\n\n```json\n{meta_json}\n```\n")
+    if extra_context:
+        parts.append(f"### Additional context\n\n{extra_context}\n")
+    parts.append(f"### Diff\n\n```diff\n{diff}\n```")
+    return "\n\n".join(parts)

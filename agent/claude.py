@@ -1,9 +1,8 @@
 import anthropic
-from dataclasses import dataclass
-from typing import Optional
-from config.settings import GCP_PROJECT, GCP_REGION, DEBUG_MODE, DebugMode, LOG_LEVEL, MAX_READ_CALLS, MAX_WRITE_CALLS
+from config.settings import DEBUG_MODE, DebugMode, LOG_LEVEL, MAX_READ_CALLS, MAX_WRITE_CALLS
 from agent.prompts import build_prompt, AgentMode
 from agent.tools import TOOL_DEFINITIONS, read_file, list_directory, write_memory_file
+from agent.vertex import AgentResult, extract_response_text, get_vertex_client
 
 READ_TOOLS  = {"read_file", "list_directory"}
 WRITE_TOOLS = {"write_memory_file"}
@@ -15,22 +14,12 @@ TOOL_FUNCTIONS = {
 }
 
 
-@dataclass
-class AgentResult:
-    response: Optional[str] = None
-    error: Optional[str] = None
-
-    @property
-    def ok(self) -> bool:
-        return self.error is None
-
-
 def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA, repo_path: str = "", operator: str = "", op_name: str = "") -> AgentResult:
     if DebugMode.DISABLE_AI in DEBUG_MODE:
         return AgentResult(response=f"[DEBUG] AI disabled. Ticket '{context.get('title')}' requested AI analysis.")
 
     try:
-        client = anthropic.AnthropicVertex(project_id=GCP_PROJECT, region=GCP_REGION)
+        client = get_vertex_client()
         prompt = build_prompt(context, mode, operator=operator, op_name=op_name)
 
         if LOG_LEVEL == "DEBUG":
@@ -50,8 +39,7 @@ def ask_agent(context: dict, mode: AgentMode = AgentMode.JIRA, repo_path: str = 
             )
 
             if response.stop_reason != "tool_use":
-                text_blocks = [b.text for b in response.content if hasattr(b, "text")]
-                return AgentResult(response="\n".join(text_blocks) or "[No response]")
+                return AgentResult(response=extract_response_text(response) or "[No response]")
 
             tool_results = []
             for block in response.content:
