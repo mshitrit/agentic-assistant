@@ -43,9 +43,24 @@ mkdir -p logs
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # ── 1. Update this repo ───────────────────────────────────────────────────────
-echo "Pulling latest changes from Git..."
-git pull
-echo "Git pull complete."
+CONFIG="$REPO_ROOT/config/config.txt"
+DEPLOY_BRANCH="main"
+if [[ -f "$CONFIG" ]]; then
+    while IFS='=' read -r key value; do
+        [[ "$key" == DEPLOY_GIT_BRANCH ]] || continue
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+        [[ -n "$value" ]] && DEPLOY_BRANCH="$value"
+        break
+    done < <(grep -E '^DEPLOY_GIT_BRANCH=' "$CONFIG" || true)
+fi
+
+GIT_REMOTE="origin"
+echo "Aligning repo to $GIT_REMOTE/$DEPLOY_BRANCH (hard reset)..."
+git -C "$REPO_ROOT" fetch "$GIT_REMOTE" "$DEPLOY_BRANCH"
+git -C "$REPO_ROOT" checkout -B "$DEPLOY_BRANCH" "$GIT_REMOTE/$DEPLOY_BRANCH"
+git -C "$REPO_ROOT" reset --hard "$GIT_REMOTE/$DEPLOY_BRANCH"
+echo "Git sync complete (at $(git -C "$REPO_ROOT" rev-parse --short HEAD))."
 
 # ── 1b. Seed living memory from verified if living is empty ───────────────────
 LIVING_ROOT="memory/living"

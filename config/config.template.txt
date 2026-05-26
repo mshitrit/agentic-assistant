@@ -83,6 +83,13 @@ MAX_READ_CALLS=10
 MAX_WRITE_CALLS=3
 
 # ==============================================
+# Deploy
+# ==============================================
+
+# Branch deploy.sh tracks on this machine (hard reset to origin/<branch>)
+DEPLOY_GIT_BRANCH=main
+
+# ==============================================
 # Debug
 # ==============================================
 
