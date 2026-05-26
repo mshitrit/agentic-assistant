@@ -17,7 +17,6 @@
 #         gcloud auth application-default login
 #
 # Environment:
-#   PR_REVIEW_MAX_BYTES      Truncate diff (default: 400000)
 #   PR_REVIEW_PROMPT_FILE    Override review rubric (default: agent/prompts.py)
 #   PR_REVIEW_LLM_CMD        Override LLM (reads prompt on stdin)
 #   PR_REVIEW_CONTEXT_FILE   Extra markdown appended to the prompt
@@ -28,7 +27,6 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=lib/find_python.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/find_python.sh"
-MAX_BYTES="${PR_REVIEW_MAX_BYTES:-400000}"
 INSTALL_DEPS="${PR_REVIEW_INSTALL_DEPS:-0}"
 
 OUT=""
@@ -328,15 +326,6 @@ cmd_auth() {
   exit 0
 }
 
-truncate_diff() {
-  local diff="$1"
-  if ((${#diff} > MAX_BYTES)); then
-    printf '%s\n\n...[diff truncated at %s bytes]...\n' "${diff:0:MAX_BYTES}" "$MAX_BYTES"
-  else
-    printf '%s' "$diff"
-  fi
-}
-
 parse_url() {
   local u="$1"
   if [[ "$u" =~ ^https?://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)/?(\?.*)?$ ]]; then
@@ -367,16 +356,23 @@ load_review_instructions() {
     "from agent.prompts import pr_review_rubric; print(pr_review_rubric(), end='')")
 }
 
+# Fetch PR meta + full diff via github.pr (shared with pr-workflow).
 fetch_github() {
   github_ensure_auth
-  META_JSON="$(gh pr view "$PR_NUM" -R "$GH_REPO" \
-    --json title,body,baseRefName,headRefName,author,url,additions,deletions,changedFiles)" \
-    || die "gh pr view failed for $GH_REPO#$PR_NUM (auth or access?)"
-  DIFF="$(gh pr diff "$PR_NUM" -R "$GH_REPO")" \
-    || die "gh pr diff failed for $GH_REPO#$PR_NUM"
+  local py fetch_json
+  py="$(find_python)"
+  [[ -n "$py" ]] || die "python3 not found (required for GitHub PR fetch)"
+  fetch_json="$(cd "$REPO_ROOT" && PYTHONPATH="$REPO_ROOT" "$py" -m github.pr review-fetch "$GH_REPO" "$PR_NUM")" \
+    || die "github.pr review-fetch failed for $GH_REPO#$PR_NUM"
+  command -v jq >/dev/null 2>&1 || die "jq required for GitHub PR fetch"
+  META_JSON="$(printf '%s' "$fetch_json" | jq -r '.meta_json')"
+  DIFF="$(printf '%s' "$fetch_json" | jq -r '.diff')"
   PLATFORM=GitHub
-  REF_LABEL="$GH_REPO pull #$PR_NUM"
-  WEB_URL="$(gh pr view "$PR_NUM" -R "$GH_REPO" --json url -q .url 2>/dev/null || true)"
+  REF_LABEL="$(printf '%s' "$fetch_json" | jq -r '.ref_label')"
+  WEB_URL="$(printf '%s' "$fetch_json" | jq -r '.url')"
+  TARGET_BRANCH="$(printf '%s' "$fetch_json" | jq -r '.base_branch')"
+  SOURCE_BRANCH="$(printf '%s' "$fetch_json" | jq -r '.head_branch')"
+  MR_TITLE="$(printf '%s' "$fetch_json" | jq -r '.title')"
 }
 
 fetch_gitlab() {
@@ -477,8 +473,6 @@ if [[ "$PROVIDER" == github ]] && command -v jq >/dev/null 2>&1; then
   WEB_URL="${WEB_URL:-$(printf '%s' "$META_JSON" | jq -r '.url // empty')}"
 fi
 
-DIFF_TRUNC="$(truncate_diff "$DIFF")"
-
 CONTEXT_EXTRA=""
 if [[ -n "${PR_REVIEW_CONTEXT_FILE:-}" && -f "$PR_REVIEW_CONTEXT_FILE" ]]; then
   CONTEXT_EXTRA="$(cat "$PR_REVIEW_CONTEXT_FILE")"
@@ -501,7 +495,7 @@ trap 'rm -f "$PROMPT_FILE"' EXIT
   if [[ -n "$CONTEXT_EXTRA" ]]; then
     printf '### Additional context\n\n%s\n\n' "$CONTEXT_EXTRA"
   fi
-  printf '### Diff\n\n```diff\n%s\n```\n' "$DIFF_TRUNC"
+  printf '### Diff\n\n```diff\n%s\n```\n' "$DIFF"
 } >"$PROMPT_FILE"
 
 if [[ "$PRINT_PROMPT" == 1 ]]; then

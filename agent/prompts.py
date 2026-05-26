@@ -11,6 +11,7 @@ class AgentMode(Enum):
     SLACK        = "slack"
     SLACK_THREAD = "slack_thread"
     PR_WORKFLOW_JIRA = "pr_workflow_jira"
+    PR_WORKFLOW_GITHUB = "pr_workflow_github"
 
 
 def _load_md_files(directory: Path) -> dict[str, str]:
@@ -189,6 +190,29 @@ def build_prompt(
             "2. Apply changes with `write_repo_file`.\n"
             "3. End with PR title + bullets (reference Jira key) and list files changed.\n"
             "Do not commit, push, or open the PR."
+        )
+        return "\n\n".join(parts)
+    # GitHub PR workflow: unresolved threads + diff (not the review rubric).
+    if mode == AgentMode.PR_WORKFLOW_GITHUB:
+        persona = f"You are an experienced {op_name} engineer." if op_name else "You are an experienced engineer."
+        parts = [
+            persona + " Address unresolved review feedback on an open GitHub pull request.",
+            f"**Operator repo:** `{repo_path}`",
+            f"**Base branch:** `{base_branch}`",
+            f"**PR head branch:** `{branch_name}`",
+            "## Pull request",
+        ]
+        for key, value in context.items():
+            if value:
+                parts.append(f"**{key.replace('_', ' ').title()}:** {value}")
+        parts.extend(_operator_memory_sections(operator))
+        parts.append(_PR_WORKFLOW_INSTRUCTIONS)
+        parts.append(
+            "## Task\n"
+            "1. For each unresolved review thread, implement the requested change.\n"
+            "2. Use `write_repo_file` with full file contents.\n"
+            "3. Summarize changes and list files touched.\n"
+            "Do not commit, push, resolve threads on GitHub, or post PR comments."
         )
         return "\n\n".join(parts)
     return build_jira_prompt(context, operator=operator, op_name=op_name)

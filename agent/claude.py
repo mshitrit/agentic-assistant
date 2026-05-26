@@ -35,7 +35,8 @@ def ask_agent(
     if DebugMode.DISABLE_AI in DEBUG_MODE:
         return AgentResult(response=f"[DEBUG] AI disabled. Ticket '{context.get('title')}' requested AI analysis.")
 
-    pr_mode = mode == AgentMode.PR_WORKFLOW_JIRA
+    # Jira→PR and GitHub PR fix modes: same tools, no read/write caps.
+    pr_mode = mode in (AgentMode.PR_WORKFLOW_JIRA, AgentMode.PR_WORKFLOW_GITHUB)
     try:
         client = get_vertex_client()
         prompt = build_prompt(
