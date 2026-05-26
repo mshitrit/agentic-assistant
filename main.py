@@ -9,7 +9,7 @@ from jira.comments import (
     extract_comment_text,
     post_restricted_issue_skip_notice,
 )
-from jira.utils import extract_adf_text, detect_operator
+from jira.utils import build_agent_context, detect_operator
 from agent.claude import ask_agent
 from telemetry.metrics import jira_metrics
 
@@ -19,16 +19,6 @@ def should_trigger(fields: dict) -> bool:
     comments = fields.get("comment", {}).get("comments", [])
     has_trigger_comment = any(TRIGGER_COMMENT in extract_comment_text(c) for c in comments)
     return has_label or has_trigger_comment
-
-
-def _format_comments(comments: list) -> str:
-    lines = []
-    for i, c in enumerate(comments, 1):
-        author = (c.get("author") or {}).get("displayName", "Unknown")
-        text = extract_comment_text(c).strip()
-        if text:
-            lines.append(f"Comment {i} ({author}): {text}")
-    return "\n".join(lines)
 
 
 if __name__ == "__main__":
@@ -72,16 +62,7 @@ if __name__ == "__main__":
             title = fields["summary"]
             print(f"Trigger detected on {key}: '{title}'")
             public_comments = fields.get("comment", {}).get("public_comments", [])
-            context = {
-                "title":       fields.get("summary"),
-                "description": extract_adf_text(fields.get("description") or {}),
-                "status":      fields.get("status", {}).get("name"),
-                "priority":    fields.get("priority", {}).get("name"),
-                "issue_type":  fields.get("issuetype", {}).get("name"),
-                "assignee":    (fields.get("assignee") or {}).get("displayName"),
-                "components":  [c["name"] for c in fields.get("components", [])],
-                "comments":    _format_comments(public_comments),
-            }
+            context = build_agent_context(fields, public_comments)
             operator = detect_operator(fields, OPERATORS)
             if operator is None:
                 print(f"[WARNING] No operator matched for {key}, skipping analysis.")

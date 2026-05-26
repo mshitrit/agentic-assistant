@@ -36,6 +36,21 @@ def list_directory(dir_path: str = "", repo_path: str = "") -> str:
     return "\n".join(lines)
 
 
+def write_repo_file(file_path: str, content: str, repo_path: str = "") -> str:
+    """Create or overwrite a file under the configured operator repo root."""
+    root = _resolve_repo_root(repo_path)
+    if root is None:
+        return "Error: repo path is not configured or does not exist."
+    full_path = (root / file_path).resolve()
+    if not str(full_path).startswith(str(root)):
+        return "Error: path traversal outside repo root is not allowed."
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    full_path.write_text(content)
+    rel = full_path.relative_to(root)
+    print(f"[REPO WRITE] {rel}")
+    return f"Successfully wrote {rel}"
+
+
 def write_memory_file(filename: str, content: str) -> str:
     full_path = (LIVING_MEMORY_DIR / filename).resolve()
     if not str(full_path).startswith(str(LIVING_MEMORY_DIR.resolve())):
@@ -97,4 +112,20 @@ TOOL_DEFINITIONS = [
             "required": ["filename", "content"]
         }
     }
+]
+
+# Jira → PR workflow: standard tools plus repo file writes.
+PR_WORKFLOW_TOOLS = TOOL_DEFINITIONS + [
+    {
+        "name": "write_repo_file",
+        "description": "Create or overwrite a file in the operator repo (provide full content).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Path relative to repo root"},
+                "content": {"type": "string", "description": "Full file content"},
+            },
+            "required": ["file_path", "content"],
+        },
+    },
 ]

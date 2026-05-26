@@ -13,8 +13,11 @@ CLOUD_ID    = config["CLOUD_ID"]
 ISSUE_KEY   = config.get("ISSUE_KEY", "").strip()
 GCP_PROJECT = config["GCP_PROJECT_ID"]
 GCP_REGION  = config["GCP_REGION"]
-PR_REVIEW_MODEL = config.get("PR_REVIEW_MODEL", "claude-opus-4-5")
+# Vertex Claude model (pr-review.sh, pr-workflow.sh). PR_REVIEW_MODEL is a legacy alias.
+AGENT_MODEL = config.get("AGENT_MODEL", config.get("PR_REVIEW_MODEL", "claude-opus-4-5"))
+PR_REVIEW_MODEL = AGENT_MODEL
 PR_REVIEW_MAX_TOKENS = int(config.get("PR_REVIEW_MAX_TOKENS", "8192"))
+PR_WORKFLOW_BASE_BRANCH = config.get("PR_WORKFLOW_BASE_BRANCH", "main")
 
 OPERATORS: dict[str, dict] = {}
 for _k, _v in config.items():

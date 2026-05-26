@@ -26,6 +26,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/find_python.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/find_python.sh"
 MAX_BYTES="${PR_REVIEW_MAX_BYTES:-400000}"
 INSTALL_DEPS="${PR_REVIEW_INSTALL_DEPS:-0}"
 
@@ -138,16 +140,6 @@ ensure_provider_deps() {
     gitlab) ensure_gitlab_deps ;;
     *) die "internal error: unknown provider for deps" ;;
   esac
-}
-
-find_python() {
-  if command -v python3.11 &>/dev/null; then
-    echo python3.11
-  elif command -v python3 &>/dev/null; then
-    echo python3
-  else
-    echo ""
-  fi
 }
 
 die() {

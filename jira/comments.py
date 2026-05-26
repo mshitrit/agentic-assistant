@@ -8,6 +8,20 @@ def extract_comment_text(comment: dict) -> str:
     return extract_adf_text(comment.get("body", {}))
 
 
+def format_issue_comments(comments: list, *, include_internal: bool = False) -> str:
+    """Format Jira comments for an agent prompt; optionally tag internal comments."""
+    lines = []
+    for i, c in enumerate(comments, 1):
+        author = (c.get("author") or {}).get("displayName", "Unknown")
+        prefix = f"Comment {i} ({author})"
+        if include_internal and c.get("visibility"):
+            prefix += " [internal]"
+        text = extract_comment_text(c).strip()
+        if text:
+            lines.append(f"{prefix}: {text}")
+    return "\n".join(lines)
+
+
 def has_ai_comment(fields: dict) -> bool:
     # Checks all comments including internal ones — safe since this data is never sent to the AI
     comments = fields.get("comment", {}).get("comments", [])

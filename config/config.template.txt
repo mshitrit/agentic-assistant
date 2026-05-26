@@ -70,9 +70,13 @@ GCP_PROJECT_ID=your-gcp-project-id
 # GCP region where Claude is available (e.g.global, us-east5, europe-west1)
 GCP_REGION=global
 
-# PR/MR review (scripts/pr-review.sh) — optional overrides
+# Vertex Claude model (scripts/pr-review.sh, scripts/pr-workflow.sh)
+# AGENT_MODEL=claude-opus-4-5
 # PR_REVIEW_MODEL=claude-opus-4-5
 # PR_REVIEW_MAX_TOKENS=8192
+
+# Base branch for Jira → PR workflow (scripts/pr-workflow.sh)
+# PR_WORKFLOW_BASE_BRANCH=main
 
 # Maximum number of operator repo read operations (read_file + list_directory) per ticket analysis.
 # Prevents excessive file reads and cost spikes. Default: 10.

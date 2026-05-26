@@ -10,6 +10,7 @@ class AgentMode(Enum):
     JIRA         = "jira"
     SLACK        = "slack"
     SLACK_THREAD = "slack_thread"
+    PR_WORKFLOW_JIRA = "pr_workflow_jira"
 
 
 def _load_md_files(directory: Path) -> dict[str, str]:
@@ -39,13 +40,33 @@ _TOOL_USE_INSTRUCTIONS = (
 )
 
 
-def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> str:
-    verified_dir = (VERIFIED_DIR / operator) if operator else VERIFIED_DIR
-    living_dir   = (LIVING_DIR / operator)   if operator else LIVING_DIR
-    verified = _load_md_files(verified_dir)
-    living   = _load_md_files(living_dir)
-    living_updates = {k: v for k, v in living.items() if v != verified.get(k, "")}
+_PR_WORKFLOW_INSTRUCTIONS = (
+    "## Tool Use Instructions\n"
+    "Prefer verified memory; read source when needed. Implement with `write_repo_file`. "
+    "Use `write_memory_file` only when code contradicts verified docs. Do not run git."
+)
 
+
+def _operator_memory_sections(operator: str) -> list[str]:
+    """Verified and living memory blocks for an operator (shared by Jira and PR prompts)."""
+    verified_dir = VERIFIED_DIR / operator if operator else VERIFIED_DIR
+    living_dir = LIVING_DIR / operator if operator else LIVING_DIR
+    verified = _load_md_files(verified_dir)
+    living = _load_md_files(living_dir)
+    living_updates = {k: v for k, v in living.items() if v != verified.get(k, "")}
+    parts: list[str] = []
+    if verified:
+        parts.append("## Verified Domain Knowledge")
+        for name, content in verified.items():
+            parts.append(f"### {name}\n{content}")
+    if living_updates:
+        parts.append("## Recent Agent Observations (Living Memory Updates)")
+        for name, content in living_updates.items():
+            parts.append(f"### {name}\n{content}")
+    return parts
+
+
+def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> str:
     persona = f"You are an experienced {op_name} engineer. " if op_name else "You are an experienced engineer. "
     parts = [
         persona + "Analyze the following Jira ticket using your domain knowledge and suggest next steps.",
@@ -55,15 +76,7 @@ def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> s
         if value:
             parts.append(f"**{key.replace('_', ' ').title()}:** {value}")
 
-    if verified:
-        parts.append("## Verified Domain Knowledge")
-        for name, content in verified.items():
-            parts.append(f"### {name}\n{content}")
-
-    if living_updates:
-        parts.append("## Recent Agent Observations (Living Memory Updates)")
-        for name, content in living_updates.items():
-            parts.append(f"### {name}\n{content}")
+    parts.extend(_operator_memory_sections(operator))
 
     parts.append(_TOOL_USE_INSTRUCTIONS)
 
@@ -142,11 +155,42 @@ def build_slack_thread_prompt(thread_history: str, operator: str = "", op_name: 
     return "\n\n".join(parts)
 
 
-def build_prompt(context: dict, mode: AgentMode = AgentMode.JIRA, operator: str = "", op_name: str = "") -> str:
+def build_prompt(
+    context: dict,
+    mode: AgentMode = AgentMode.JIRA,
+    operator: str = "",
+    op_name: str = "",
+    *,
+    repo_path: str = "",
+    base_branch: str = "main",
+    branch_name: str = "",
+) -> str:
     if mode == AgentMode.SLACK_THREAD:
         return build_slack_thread_prompt(context.get("title", ""), operator=operator, op_name=op_name)
     if mode == AgentMode.SLACK:
         return build_slack_prompt(context.get("title", ""), operator=operator, op_name=op_name)
+    if mode == AgentMode.PR_WORKFLOW_JIRA:
+        persona = f"You are an experienced {op_name} engineer." if op_name else "You are an experienced engineer."
+        parts = [
+            persona + " Implement a fix for the Jira ticket and prepare a pull request.",
+            f"**Operator repo:** `{repo_path}`",
+            f"**Base branch:** `{base_branch}`",
+            f"**Suggested branch:** `{branch_name}`",
+            "## Jira Ticket",
+        ]
+        for key, value in context.items():
+            if value:
+                parts.append(f"**{key.replace('_', ' ').title()}:** {value}")
+        parts.extend(_operator_memory_sections(operator))
+        parts.append(_PR_WORKFLOW_INSTRUCTIONS)
+        parts.append(
+            "## Task\n"
+            "1. Plan the minimal correct fix.\n"
+            "2. Apply changes with `write_repo_file`.\n"
+            "3. End with PR title + bullets (reference Jira key) and list files changed.\n"
+            "Do not commit, push, or open the PR."
+        )
+        return "\n\n".join(parts)
     return build_jira_prompt(context, operator=operator, op_name=op_name)
 
 
