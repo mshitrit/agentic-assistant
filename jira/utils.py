@@ -1,8 +1,6 @@
 from functools import wraps
 import re
 
-from jira.comments import format_issue_comments
-
 
 def extract_adf_text(adf: dict) -> str:
     """Extract plain text from an Atlassian Document Format (ADF) object."""
@@ -13,6 +11,20 @@ def extract_adf_text(adf: dict) -> str:
         for item in para.get("content", [])
         if item.get("type") == "text"
     )
+
+
+def format_issue_comments(comments: list, *, include_internal: bool = False) -> str:
+    """Format Jira comments for an agent prompt; optionally tag internal comments."""
+    lines = []
+    for i, c in enumerate(comments, 1):
+        author = (c.get("author") or {}).get("displayName", "Unknown")
+        prefix = f"Comment {i} ({author})"
+        if include_internal and c.get("visibility"):
+            prefix += " [internal]"
+        text = extract_adf_text(c.get("body", {})).strip()
+        if text:
+            lines.append(f"{prefix}: {text}")
+    return "\n".join(lines)
 
 
 _ISSUE_KEY_RE = re.compile(r"([A-Z][A-Z0-9]+-\d+)")
