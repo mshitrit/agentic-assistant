@@ -173,9 +173,15 @@ def format_unresolved_threads(gql_payload: dict[str, Any]) -> str:
 
 # Fetch unresolved PR review threads via gh api graphql.
 def fetch_unresolved_threads(owner: str, repo: str, pr_num: int) -> str:
-    variables = json.dumps({"owner": owner, "name": repo, "number": pr_num})
+    # gh treats each -f/-F field (except query) as a GraphQL variable, not a JSON blob.
     out = _run_gh(
-        ["api", "graphql", "-f", f"query={_GQL_THREADS}", "-f", f"variables={variables}"]
+        [
+            "api", "graphql",
+            "-f", f"query={_GQL_THREADS}",
+            "-f", f"owner={owner}",
+            "-f", f"name={repo}",
+            "-F", f"number={pr_num}",
+        ]
     )
     return format_unresolved_threads(json.loads(out))
 
