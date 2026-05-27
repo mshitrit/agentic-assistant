@@ -8,7 +8,7 @@ import sys
 
 from agent.claude import ask_agent
 from agent.prompts import AgentMode, build_prompt
-from config.settings import OPERATORS, PR_WORKFLOW_BASE_BRANCH
+from config.settings import OPERATORS
 from github.pr import (
     fetch_for_review,
     fetch_unresolved_threads,
@@ -58,7 +58,6 @@ def _run_jira(target: str, *, prompt_only: bool) -> int:
             operator=operator,
             op_name=op_name,
             repo_path=repo_path,
-            base_branch=PR_WORKFLOW_BASE_BRANCH,
             branch_name=branch,
         ))
         return 0
@@ -69,7 +68,6 @@ def _run_jira(target: str, *, prompt_only: bool) -> int:
         repo_path=repo_path,
         operator=operator,
         op_name=op_name,
-        base_branch=PR_WORKFLOW_BASE_BRANCH,
         branch_name=branch,
     )
     if not result.ok:
@@ -79,7 +77,7 @@ def _run_jira(target: str, *, prompt_only: bool) -> int:
     print(result.response)
     print("\n--- Next steps (operator repo; not run automatically) ---")
     print(f"  cd {repo_path}")
-    print(f"  git fetch origin && git checkout -B {branch} origin/{PR_WORKFLOW_BASE_BRANCH}")
+    print(f"  git fetch origin && git checkout -B {branch}")
     print("  git status && git add ... && git commit && git push -u origin HEAD && gh pr create --fill")
     return 0
 

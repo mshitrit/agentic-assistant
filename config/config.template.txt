@@ -75,9 +75,6 @@ GCP_REGION=global
 # PR_REVIEW_MODEL=claude-opus-4-5
 # PR_REVIEW_MAX_TOKENS=8192
 
-# Base branch for Jira → PR workflow (scripts/pr-workflow.sh)
-# PR_WORKFLOW_BASE_BRANCH=main
-
 # Maximum number of operator repo read operations (read_file + list_directory) per ticket analysis.
 # Prevents excessive file reads and cost spikes. Default: 10.
 MAX_READ_CALLS=10

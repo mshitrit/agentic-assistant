@@ -175,7 +175,6 @@ def build_prompt(
         parts = [
             persona + " Implement a fix for the Jira ticket and prepare a pull request.",
             f"**Operator repo:** `{repo_path}`",
-            f"**Base branch:** `{base_branch}`",
             f"**Suggested branch:** `{branch_name}`",
             "## Jira Ticket",
         ]
