@@ -7,7 +7,7 @@ import re
 import sys
 
 from agent.claude import ask_agent
-from agent.prompts import AgentMode, build_prompt
+from agent.prompts import AgentMode, build_prompt, parse_workflow_outcome
 from config.settings import OPERATORS
 from github.pr import (
     fetch_for_review,
@@ -17,6 +17,37 @@ from github.pr import (
 )
 from jira.client import get_issue_details
 from jira.utils import build_agent_context, detect_operator, parse_jira_issue_key
+
+
+# Map ask_agent errors to user-facing messages.
+def _workflow_error_message(error: str | None) -> str:
+    if error == "no_repo_writes":
+        return (
+            "agent concluded OUTCOME: implement but did not write any repo files "
+            "(write_repo_file was not called successfully)"
+        )
+    return error or "unknown error"
+
+
+def _print_workflow_result(
+    result,
+    *,
+    repo_path: str,
+    jira_branch: str | None = None,
+    github_head_branch: str | None = None,
+) -> None:
+    print(result.response)
+    if parse_workflow_outcome(result.response or "") == "no_code_change":
+        print("\n--- No repo changes (OUTCOME: no_code_change) ---")
+        return
+    print("\n--- Next steps (operator repo; not run automatically) ---")
+    print(f"  cd {repo_path}")
+    if jira_branch:
+        print(f"  git fetch origin && git checkout -B {jira_branch}")
+        print("  git status && git add ... && git commit && git push -u origin HEAD && gh pr create --fill")
+    elif github_head_branch:
+        print(f"  git fetch origin && git checkout {github_head_branch}")
+        print("  git status && git add ... && git commit && git push")
 
 
 # Suggest a feature branch name for a Jira-driven PR.
@@ -71,14 +102,10 @@ def _run_jira(target: str, *, prompt_only: bool) -> int:
         branch_name=branch,
     )
     if not result.ok:
-        print(f"pr-workflow: {result.error}", file=sys.stderr)
+        print(f"pr-workflow: {_workflow_error_message(result.error)}", file=sys.stderr)
         return 1
 
-    print(result.response)
-    print("\n--- Next steps (operator repo; not run automatically) ---")
-    print(f"  cd {repo_path}")
-    print(f"  git fetch origin && git checkout -B {branch}")
-    print("  git status && git add ... && git commit && git push -u origin HEAD && gh pr create --fill")
+    _print_workflow_result(result, repo_path=repo_path, jira_branch=branch)
     return 0
 
 
@@ -144,14 +171,12 @@ def _run_github_pr(target: str, *, prompt_only: bool) -> int:
         branch_name=review["head_branch"],
     )
     if not result.ok:
-        print(f"pr-workflow: {result.error}", file=sys.stderr)
+        print(f"pr-workflow: {_workflow_error_message(result.error)}", file=sys.stderr)
         return 1
 
-    print(result.response)
-    print("\n--- Next steps (operator repo; not run automatically) ---")
-    print(f"  cd {repo_path}")
-    print(f"  git fetch origin && git checkout {review['head_branch']}")
-    print("  git status && git add ... && git commit && git push")
+    _print_workflow_result(
+        result, repo_path=repo_path, github_head_branch=review["head_branch"],
+    )
     return 0
 
 

@@ -43,9 +43,31 @@ _TOOL_USE_INSTRUCTIONS = (
 
 _PR_WORKFLOW_INSTRUCTIONS = (
     "## Tool Use Instructions\n"
-    "Prefer verified memory; read source when needed. Implement with `write_repo_file`. "
-    "Use `write_memory_file` only when code contradicts verified docs. Do not run git."
+    "Prefer verified memory; read source when needed. When code must change, use `write_repo_file` "
+    "with full file contents. Use `write_memory_file` only when code contradicts verified docs. "
+    "Do not run git."
 )
+
+_PR_WORKFLOW_COMPLETION = (
+    "## Completion\n"
+    "Before your final message, decide:\n"
+    "- **Code changes required:** call `write_repo_file` for every file to edit, then end with a "
+    "line exactly `OUTCOME: implement`, then PR title + bullets and list files changed.\n"
+    "- **No code change required** (won't fix, duplicate, needs info, not in this repo, etc.): do "
+    "not call `write_repo_file`; end with a line exactly `OUTCOME: no_code_change` and a brief reason.\n"
+    "Do not commit, push, open PRs, resolve review threads, or post PR comments."
+)
+
+
+def parse_workflow_outcome(text: str) -> str | None:
+    """Return 'implement', 'no_code_change', or None if no OUTCOME line in agent text."""
+    for line in (text or "").splitlines():
+        s = line.strip().upper()
+        if s == "OUTCOME: IMPLEMENT":
+            return "implement"
+        if s == "OUTCOME: NO_CODE_CHANGE":
+            return "no_code_change"
+    return None
 
 
 def _operator_memory_sections(operator: str) -> list[str]:
@@ -186,10 +208,10 @@ def build_prompt(
         parts.append(
             "## Task\n"
             "1. Plan the minimal correct fix.\n"
-            "2. Apply changes with `write_repo_file`.\n"
-            "3. End with PR title + bullets (reference Jira key) and list files changed.\n"
-            "Do not commit, push, or open the PR."
+            "2. If changes are needed, apply them with `write_repo_file`.\n"
+            "3. Follow **Completion** below."
         )
+        parts.append(_PR_WORKFLOW_COMPLETION)
         return "\n\n".join(parts)
     # GitHub PR workflow: unresolved threads + diff (not the review rubric).
     if mode == AgentMode.PR_WORKFLOW_GITHUB:
@@ -208,11 +230,11 @@ def build_prompt(
         parts.append(_PR_WORKFLOW_INSTRUCTIONS)
         parts.append(
             "## Task\n"
-            "1. For each unresolved review thread, implement the requested change.\n"
-            "2. Use `write_repo_file` with full file contents.\n"
-            "3. Summarize changes and list files touched.\n"
-            "Do not commit, push, resolve threads on GitHub, or post PR comments."
+            "1. For each unresolved review thread, decide if a code change is required.\n"
+            "2. If changes are needed, apply them with `write_repo_file`.\n"
+            "3. Follow **Completion** below."
         )
+        parts.append(_PR_WORKFLOW_COMPLETION)
         return "\n\n".join(parts)
     return build_jira_prompt(context, operator=operator, op_name=op_name)
 

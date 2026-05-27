@@ -72,10 +72,12 @@ GCP_PROJECT_ID=your-gcp-project-id
 # GCP region where Claude is available (e.g.global, us-east5, europe-west1)
 GCP_REGION=global
 
-# Vertex Claude model (scripts/pr-review.sh, scripts/pr-workflow.sh)
+# Vertex Claude model (pr-workflow.sh, Jira poller, Slack, pr-review.sh)
 # AGENT_MODEL=claude-opus-4-5
-# PR_REVIEW_MODEL=claude-opus-4-5
+# Max output tokens for pr-review.sh (non-streaming)
 # PR_REVIEW_MAX_TOKENS=8192
+# Max output tokens for pr-workflow.sh (streaming; large write_repo_file payloads)
+# PR_WORKFLOW_MAX_TOKENS=32768
 
 # Maximum number of operator repo read operations (read_file + list_directory) per ticket analysis.
 # Prevents excessive file reads and cost spikes. Default: 10.

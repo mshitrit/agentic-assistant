@@ -6,7 +6,7 @@ import os
 import sys
 
 from agent.vertex import complete_single_turn
-from config.settings import AGENT_MODEL, PR_REVIEW_MAX_TOKENS, PR_REVIEW_MODEL
+from config.settings import AGENT_MODEL, PR_REVIEW_MAX_TOKENS
 
 
 def main() -> int:
@@ -24,7 +24,7 @@ def main() -> int:
         )
         return 1
 
-    model = os.environ.get("AGENT_MODEL") or os.environ.get("PR_REVIEW_MODEL") or AGENT_MODEL
+    model = os.environ.get("AGENT_MODEL") or AGENT_MODEL
     max_tokens = int(os.environ.get("PR_REVIEW_MAX_TOKENS", str(PR_REVIEW_MAX_TOKENS)))
 
     result = complete_single_turn(prompt, max_tokens=max_tokens, model=model)
