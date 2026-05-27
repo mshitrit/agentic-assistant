@@ -32,6 +32,8 @@ CLOUD_ID=your-cloud-id
 # Choose short, memorable keys (e.g. SBR, FAR, SNR, NHC, MDR, NMO) and keep them consistent across config and memory dirs.
 #
 # OPERATOR_{KEY}_COMPONENTS: comma-separated Jira component names to watch
+#   (pr-workflow.sh also matches GitHub PR repo names to these labels, ignoring
+#    case, hyphens, and trailing "Remediation"/"Operator")
 # OPERATOR_{KEY}_REPO_PATH:  absolute path to a local clone of the operator repo
 #                            (leave empty to disable repo access for that operator)
 

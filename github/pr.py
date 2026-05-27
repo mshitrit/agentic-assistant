@@ -67,6 +67,34 @@ def fetch_for_review(gh_repo: str, pr_num: int) -> dict[str, str]:
     }
 
 
+# Normalize a GitHub repo slug or Jira component for case-insensitive matching.
+def normalize_repo_label(label: str) -> str:
+    t = re.sub(r"[-_/]+", " ", (label or "").lower()).strip()
+    t = re.sub(r"\s+", " ", t)
+    for suffix in (" remediation", " operator"):
+        while t.endswith(suffix):
+            t = t[: -len(suffix)].strip()
+    return t
+
+
+# Map operator by PR repo name vs OPERATOR_*_COMPONENTS (then origin fallback).
+def _match_operators_by_component(
+    repo_name: str,
+    operators: dict[str, dict],
+) -> list[tuple[str, str, str]]:
+    want = normalize_repo_label(repo_name)
+    matches: list[tuple[str, str, str]] = []
+    for op_key, cfg in operators.items():
+        rp = (cfg.get("repo_path") or "").strip()
+        if not rp or not Path(rp).is_dir():
+            continue
+        for comp in cfg.get("components") or []:
+            if normalize_repo_label(comp) == want:
+                matches.append((op_key, rp, comp))
+                break
+    return matches
+
+
 # Map a git origin URL to owner/repo for github.com remotes.
 def _normalize_origin_to_slug(remote_url: str) -> str | None:
     u = remote_url.strip()
@@ -77,11 +105,23 @@ def _normalize_origin_to_slug(remote_url: str) -> str | None:
     return None
 
 
-# Find operator key and local clone whose origin matches gh_repo.
+# Find operator key and local clone for a PR (components first, then git origin).
 def find_operator_for_github_repo(
     gh_repo: str,
     operators: dict[str, dict],
 ) -> tuple[str, str, str] | None:
+    repo_name = gh_repo.split("/", 1)[-1] if "/" in gh_repo else gh_repo
+    by_component = _match_operators_by_component(repo_name, operators)
+    if len(by_component) == 1:
+        return by_component[0]
+    if len(by_component) > 1:
+        keys = ", ".join(m[0] for m in by_component)
+        print(
+            f"github.pr: ambiguous OPERATOR_*_COMPONENTS match for {repo_name!r}: {keys}",
+            file=sys.stderr,
+        )
+        return None
+
     want = gh_repo.lower()
     for op_key, cfg in operators.items():
         rp = (cfg.get("repo_path") or "").strip()

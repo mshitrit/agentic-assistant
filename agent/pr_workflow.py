@@ -93,7 +93,11 @@ def _run_github_pr(target: str, *, prompt_only: bool) -> int:
 
     matched = find_operator_for_github_repo(gh_repo, OPERATORS)
     if not matched:
-        print(f"pr-workflow: no OPERATOR_*_REPO_PATH matches {gh_repo}", file=sys.stderr)
+        print(
+            f"pr-workflow: no OPERATOR_* entry matches {gh_repo} "
+            "(check OPERATOR_*_COMPONENTS vs repo name or origin URL)",
+            file=sys.stderr,
+        )
         return 1
     operator, repo_path, op_name = matched
 
