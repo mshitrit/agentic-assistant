@@ -21,6 +21,7 @@ agentic-assistant/
 ├── scripts/
 │   ├── update-operator-repos.sh   # git pull for each OPERATOR_*_REPO_PATH (see deploy)
 │   ├── lib/find_python.sh         # find_python() — source from scripts that need it
+│   ├── jira-assist.sh             # one-shot Jira analysis to console only (no Jira writes)
 │   ├── pr-workflow.sh             # Jira URL or GitHub PR URL → Vertex + operator repo writes
 │   ├── sync-living-from-remote.sh # optional: rsync remote living memory into memory/verified/
 │   └── reset-living-from-verified.sh # mirror memory/verified/ -> memory/living/ after merges
@@ -40,6 +41,7 @@ agentic-assistant/
 | `slack_bot_main.py` | Listens for `@mentions` in Slack and responds with AI-generated answers using the same domain knowledge as the Jira agent (see [Slack Bot Setup](docs/SLACK_BOT_SETUP.md)) |
 | `deploy.sh` | Reads `DEPLOY_GIT_BRANCH` from `config/config.txt` (default `main`), `fetch` + hard reset to `origin/<branch>`, seeds empty `memory/living/` from verified memory, runs `scripts/update-operator-repos.sh`, installs a daily 02:00 cron job for operator repo sync (`AGENTIC_CRON_JOB=operator_repo_sync`), restarts selected processes, then `tail -f` on the new log files |
 | `scripts/update-operator-repos.sh` | For each `OPERATOR_*_REPO_PATH` in `config/config.txt`, runs `git pull origin main`; append-only log at `logs/operator-repos-sync.log` |
+| `scripts/jira-assist.sh` | One-shot Jira URL/key analysis to stdout only (no Jira comments, labels, or ticket updates). |
 | `scripts/pr-workflow.sh` | Jira URL/key or GitHub `.../pull/N` → Vertex; uses `github/pr.py` (same PR fetch as `pr-review.sh`) plus unresolved review threads. Requires `gh`. No auto-commit/PR. |
 | `scripts/sync-living-from-remote.sh` | Rsync `memory/living/` from another host into this repo's `memory/verified/` (for diff review in the IDE). Defaults: `REMOTE=root@bkr1.local`, `REMOTE_ROOT=/root/gitrepos/agentic-assistant`. Override with env vars; run `./scripts/sync-living-from-remote.sh` from repo root (the script prints examples when both defaults apply). |
 | `scripts/reset-living-from-verified.sh` | Overwrites `memory/living/` with `memory/verified/` using `rsync --delete` — use after you have merged updates into verified and want the agent scratch tree to match (e.g. before the next deploy or poller run). |
@@ -180,6 +182,18 @@ Add a comment containing `/ai-assist` anywhere in the text.
 Once triggered, the agent will post an AI-generated comment (prefixed with 🤖 [AI Generated]) on the ticket.
 The agent will only comment once per trigger — if an AI-generated comment already exists, it will not post again.
 To request another analysis, remove the existing AI comment or add a new `/ai-assist` comment.
+
+### Option 3: One-shot shell trigger (console output only)
+Run AI analysis for a Jira issue from shell, without writing anything back to Jira:
+
+```bash
+./scripts/jira-assist.sh RHWA-1017
+# or
+./scripts/jira-assist.sh https://redhat.atlassian.net/browse/RHWA-1017
+```
+
+This command prints the AI output to stdout and does not post comments or update ticket fields.
+Use `--internal` to include internal comments in prompt context.
 
 ## Deployment
 
