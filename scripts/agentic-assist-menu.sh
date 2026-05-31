@@ -27,27 +27,21 @@ run_pr_workflow() {
 }
 
 run_pr_review() {
-  local url out flags=()
+  local url
   url="$(prompt_required "PR or MR URL")"
-  if prompt_yes_no "Write review to file?" n; then
-    out="$(prompt_required "Output file path")"
-    flags+=(-o "$out")
-  fi
-  if prompt_yes_no "Print prompt only (no LLM call)?" n; then
-    flags+=(-p)
-  fi
   cd "$REPO_ROOT"
-  exec "$USER_SCRIPTS/pr-review.sh" "${flags[@]}" "$url"
+  exec "$USER_SCRIPTS/pr-review.sh" "$url"
 }
 
 run_jira_assist() {
-  local url flags=()
+  local url flags=(--internal) ctx="" ctx_file=""
   url="$(prompt_required "Jira URL or issue key")"
-  if prompt_yes_no "Include internal comments?" n; then
-    flags+=(--internal)
-  fi
-  if prompt_yes_no "Print prompt only (no Vertex call)?" n; then
-    flags+=(-p)
+  prompt_multiline_optional ctx "Additional instructions (optional):"
+  if [[ -n "$ctx" ]]; then
+    ctx_file="$(mktemp)"
+    printf '%s' "$ctx" >"$ctx_file"
+    flags+=(-f "$ctx_file")
+    trap 'rm -f "$ctx_file"' EXIT
   fi
   cd "$REPO_ROOT"
   exec "$USER_SCRIPTS/jira-assist.sh" "${flags[@]}" "$url"

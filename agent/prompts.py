@@ -101,7 +101,8 @@ def _pr_workflow_user_instructions_section(user_instructions: str) -> list[str]:
     ]
 
 
-def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> str:
+def build_jira_prompt(context: dict, operator: str = "", op_name: str = "",
+                      user_instructions: str = "") -> str:
     persona = f"You are an experienced {op_name} engineer. " if op_name else "You are an experienced engineer. "
     parts = [
         persona + "Analyze the following Jira ticket using your domain knowledge and suggest next steps.",
@@ -112,6 +113,7 @@ def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> s
             parts.append(f"**{key.replace('_', ' ').title()}:** {value}")
 
     parts.extend(_operator_memory_sections(operator))
+    parts.extend(_pr_workflow_user_instructions_section(user_instructions))
 
     parts.append(_TOOL_USE_INSTRUCTIONS)
 
@@ -251,7 +253,8 @@ def build_prompt(
         )
         parts.append(_PR_WORKFLOW_COMPLETION)
         return "\n\n".join(parts)
-    return build_jira_prompt(context, operator=operator, op_name=op_name)
+    return build_jira_prompt(context, operator=operator, op_name=op_name,
+                             user_instructions=user_instructions)
 
 
 PR_REVIEW_RUBRIC = """\

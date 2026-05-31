@@ -12,9 +12,11 @@ die() { echo "jira-assist: $*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-Usage: scripts/user/jira-assist.sh <JIRA_URL_OR_KEY> [-p] [--internal]
-  -p, --prompt   Print prompt only (no Vertex call)
-      --internal Include internal comments in context
+Usage: scripts/user/jira-assist.sh <JIRA_URL_OR_KEY> [-p] [--internal] [-c TEXT] [-f FILE]
+  -p, --prompt        Print prompt only (no Vertex call)
+      --internal      Include internal comments in context
+  -c, --context       Extra instructions for the agent prompt
+  -f, --context-file  Read extra instructions from FILE
 EOF
 }
 
@@ -34,6 +36,14 @@ while [[ $# -gt 0 ]]; do
     -p|--prompt|--internal)
       PASS_ARGS+=("$1")
       shift
+      ;;
+    -c|--context)
+      PASS_ARGS+=(-c "$2")
+      shift 2
+      ;;
+    -f|--context-file)
+      PASS_ARGS+=(-f "$2")
+      shift 2
       ;;
     -*)
       die "unknown option: $1"

@@ -28,6 +28,20 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Include internal Jira comments in context (tagged as [internal])",
     )
+    parser.add_argument(
+        "-c",
+        "--context",
+        dest="user_instructions",
+        default="",
+        help="Extra instructions for the agent prompt",
+    )
+    parser.add_argument(
+        "-f",
+        "--context-file",
+        dest="context_file",
+        default="",
+        help="Read extra instructions from FILE",
+    )
     args = parser.parse_args(argv)
 
     issue_key = parse_jira_issue_key(args.target)
@@ -56,6 +70,11 @@ def main(argv: list[str] | None = None) -> int:
     repo_path = OPERATORS[operator].get("repo_path", "")
     op_name = OPERATORS[operator]["components"][0]
 
+    user_instr = args.user_instructions
+    if args.context_file:
+        with open(args.context_file) as fh:
+            user_instr = fh.read()
+
     all_comments = fields.get("comment", {}).get("comments", [])
     public_comments = fields.get("comment", {}).get("public_comments", [])
     comments = all_comments if args.internal else public_comments
@@ -66,7 +85,8 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.prompt:
-        print(build_prompt(context, AgentMode.JIRA, operator=operator, op_name=op_name))
+        print(build_prompt(context, AgentMode.JIRA, operator=operator, op_name=op_name,
+                           user_instructions=user_instr))
         return 0
 
     result = ask_agent(
@@ -75,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
         operator=operator,
         op_name=op_name,
         repo_path=repo_path,
+        user_instructions=user_instr,
     )
     if not result.ok:
         print(f"jira-assist: {result.error}", file=sys.stderr)
