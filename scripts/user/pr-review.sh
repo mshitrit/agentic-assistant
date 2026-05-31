@@ -3,13 +3,13 @@
 # Fetches metadata and the platform diff via gh / glab (no local checkout).
 #
 # Usage:
-#   scripts/pr-review.sh <PR_OR_MR_URL> [-o FILE] [-p] [--login] [--install-deps]
-#   scripts/pr-review.sh auth <github|HOST|PR_OR_MR_URL>
-#   scripts/pr-review.sh setup [github|gitlab|all|PR_OR_MR_URL]
+#   scripts/user/pr-review.sh <PR_OR_MR_URL> [-o FILE] [-p] [--login] [--install-deps]
+#   scripts/user/pr-review.sh auth <github|HOST|PR_OR_MR_URL>
+#   scripts/user/pr-review.sh setup [github|gitlab|all|PR_OR_MR_URL]
 #
 # Examples:
-#   ./scripts/pr-review.sh https://github.com/medik8s/fence-agents-remediation/pull/87
-#   ./scripts/pr-review.sh https://gitlab.cee.redhat.com/dragonfly/machine-deletion-remediation/-/merge_requests/473
+#   ./scripts/user/pr-review.sh https://github.com/medik8s/fence-agents-remediation/pull/87
+#   ./scripts/user/pr-review.sh https://gitlab.cee.redhat.com/dragonfly/machine-deletion-remediation/-/merge_requests/473
 #
 # Requires (per platform): gh (GitHub), glab + jq (GitLab)
 # Auth: gh auth login / glab auth login — or set GH_TOKEN / GLAB_TOKEN (read by gh/glab, not set by this script)
@@ -24,9 +24,9 @@
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# shellcheck source=lib/find_python.sh
-source "$(dirname "${BASH_SOURCE[0]}")/lib/find_python.sh"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=../lib/find_python.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/find_python.sh"
 INSTALL_DEPS="${PR_REVIEW_INSTALL_DEPS:-0}"
 
 OUT=""
@@ -40,13 +40,13 @@ Review a GitHub pull request or GitLab merge request from its URL.
 Fetches metadata and the platform diff via gh / glab (no local checkout).
 
 Usage:
-  scripts/pr-review.sh <PR_OR_MR_URL> [-o FILE] [-p] [--login] [--install-deps]
-  scripts/pr-review.sh auth <github|HOST|PR_OR_MR_URL>
-  scripts/pr-review.sh setup [github|gitlab|all|PR_OR_MR_URL]
+  scripts/user/pr-review.sh <PR_OR_MR_URL> [-o FILE] [-p] [--login] [--install-deps]
+  scripts/user/pr-review.sh auth <github|HOST|PR_OR_MR_URL>
+  scripts/user/pr-review.sh setup [github|gitlab|all|PR_OR_MR_URL]
 
 Examples:
-  ./scripts/pr-review.sh https://github.com/medik8s/fence-agents-remediation/pull/87
-  ./scripts/pr-review.sh https://gitlab.cee.redhat.com/dragonfly/machine-deletion-remediation/-/merge_requests/473
+  ./scripts/user/pr-review.sh https://github.com/medik8s/fence-agents-remediation/pull/87
+  ./scripts/user/pr-review.sh https://gitlab.cee.redhat.com/dragonfly/machine-deletion-remediation/-/merge_requests/473
 
 Requires (per URL): gh (GitHub), glab + jq (GitLab)
 
@@ -59,9 +59,9 @@ Options:
 
 Auth: gh auth login / glab auth login --hostname HOST
       Non-interactive: GH_TOKEN (GitHub) or GLAB_TOKEN (GitLab), read by gh/glab
-      Run: ./scripts/pr-review.sh auth <github|HOST|URL>
+      Run: ./scripts/user/pr-review.sh auth <github|HOST|URL>
 
-Install CLIs: ./scripts/pr-review.sh setup [github|gitlab|all]
+Install CLIs: ./scripts/user/pr-review.sh setup [github|gitlab|all]
 
 Review: Claude via Vertex (config/config.txt). Fallback: PR_REVIEW_LLM_CMD, cursor, claude CLI.
 EOF

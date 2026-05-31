@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CONFIG="$ROOT/config/config.txt"
 LOG_DIR="$ROOT/logs"
 LOG_FILE="$LOG_DIR/operator-repos-sync.log"

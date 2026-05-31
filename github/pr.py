@@ -1,4 +1,4 @@
-"""GitHub PR fetch via gh — shared by scripts/pr-review.sh and agent/pr_workflow.py."""
+"""GitHub PR fetch via gh — shared by scripts/user/pr-review.sh and agent/pr_workflow.py."""
 
 from __future__ import annotations
 

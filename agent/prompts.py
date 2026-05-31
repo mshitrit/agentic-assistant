@@ -89,6 +89,18 @@ def _operator_memory_sections(operator: str) -> list[str]:
     return parts
 
 
+def _pr_workflow_user_instructions_section(user_instructions: str) -> list[str]:
+    text = (user_instructions or "").strip()
+    if not text:
+        return []
+    return [
+        "## User instructions\n"
+        "The human running this workflow provided the following directives. "
+        "Follow them when interpreting the ticket/PR feedback and planning changes:\n\n"
+        f"{text}",
+    ]
+
+
 def build_jira_prompt(context: dict, operator: str = "", op_name: str = "") -> str:
     persona = f"You are an experienced {op_name} engineer. " if op_name else "You are an experienced engineer. "
     parts = [
@@ -187,6 +199,7 @@ def build_prompt(
     repo_path: str = "",
     base_branch: str = "main",
     branch_name: str = "",
+    user_instructions: str = "",
 ) -> str:
     if mode == AgentMode.SLACK_THREAD:
         return build_slack_thread_prompt(context.get("title", ""), operator=operator, op_name=op_name)
@@ -204,6 +217,7 @@ def build_prompt(
             if value:
                 parts.append(f"**{key.replace('_', ' ').title()}:** {value}")
         parts.extend(_operator_memory_sections(operator))
+        parts.extend(_pr_workflow_user_instructions_section(user_instructions))
         parts.append(_PR_WORKFLOW_INSTRUCTIONS)
         parts.append(
             "## Task\n"
@@ -227,6 +241,7 @@ def build_prompt(
             if value:
                 parts.append(f"**{key.replace('_', ' ').title()}:** {value}")
         parts.extend(_operator_memory_sections(operator))
+        parts.extend(_pr_workflow_user_instructions_section(user_instructions))
         parts.append(_PR_WORKFLOW_INSTRUCTIONS)
         parts.append(
             "## Task\n"

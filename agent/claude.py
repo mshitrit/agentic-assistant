@@ -176,6 +176,7 @@ def ask_agent(
     *,
     base_branch: str = "main",
     branch_name: str = "",
+    user_instructions: str = "",
 ) -> AgentResult:
     if DebugMode.DISABLE_AI in DEBUG_MODE:
         return AgentResult(response=f"[DEBUG] AI disabled. Ticket '{context.get('title')}' requested AI analysis.")
@@ -186,6 +187,7 @@ def ask_agent(
         prompt = build_prompt(
             context, mode, operator=operator, op_name=op_name,
             repo_path=repo_path, base_branch=base_branch, branch_name=branch_name,
+            user_instructions=user_instructions,
         )
 
         if LOG_LEVEL == "DEBUG":

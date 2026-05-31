@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # One-shot Jira analysis to console (no Jira comments/updates).
 #
-# Usage: scripts/jira-assist.sh <JIRA_URL_OR_KEY> [-p] [--internal]
+# Usage: scripts/user/jira-assist.sh <JIRA_URL_OR_KEY> [-p] [--internal]
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-# shellcheck source=lib/find_python.sh
-source "$(dirname "${BASH_SOURCE[0]}")/lib/find_python.sh"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck source=../lib/find_python.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/find_python.sh"
 
 die() { echo "jira-assist: $*" >&2; exit 1; }
 
 usage() {
   cat <<'EOF'
-Usage: scripts/jira-assist.sh <JIRA_URL_OR_KEY> [-p] [--internal]
+Usage: scripts/user/jira-assist.sh <JIRA_URL_OR_KEY> [-p] [--internal]
   -p, --prompt   Print prompt only (no Vertex call)
       --internal Include internal comments in context
 EOF

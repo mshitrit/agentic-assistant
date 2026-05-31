@@ -2,7 +2,7 @@
 # Replace memory/living/ with a copy of memory/verified/ (run after promoting changes to verified).
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 VER="${REPO_ROOT}/memory/verified"
 LIV="${REPO_ROOT}/memory/living"
 

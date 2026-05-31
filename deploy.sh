@@ -74,12 +74,12 @@ elif [ ! -d "$LIVING_ROOT" ] || [ -z "$(ls -A "$LIVING_ROOT" 2>/dev/null)" ]; th
 fi
 
 # ── 2. Update operator repos (if configured) ─────────────────────────────────
-bash "$REPO_ROOT/scripts/update-operator-repos.sh"
+bash "$REPO_ROOT/scripts/internal/update-operator-repos.sh"
 echo "Operator repo sync complete; see logs/operator-repos-sync.log"
 
 # ── 2b. Daily cron: operator repos at 02:00 (replaces prior entry with same id) ─
 CRON_TAG="AGENTIC_CRON_JOB=operator_repo_sync"
-CRON_LINE="0 2 * * * cd \"$REPO_ROOT\" && exec env $CRON_TAG /usr/bin/env bash \"$REPO_ROOT/scripts/update-operator-repos.sh\""
+CRON_LINE="0 2 * * * cd \"$REPO_ROOT\" && exec env $CRON_TAG /usr/bin/env bash \"$REPO_ROOT/scripts/internal/update-operator-repos.sh\""
 if command -v crontab &>/dev/null; then
     _cron_tmp="$(mktemp)"
     ( crontab -l 2>/dev/null | grep -vF "$CRON_TAG" || true ) >"$_cron_tmp"

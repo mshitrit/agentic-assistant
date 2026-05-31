@@ -13,8 +13,8 @@ using_default_root=true
 
 REMOTE="${REMOTE:-$DEFAULT_REMOTE}"
 REMOTE_ROOT="${REMOTE_ROOT:-$DEFAULT_REMOTE_ROOT}"
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT_PATH="${REPO_ROOT}/scripts/$(basename "$0")"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+SCRIPT_PATH="${REPO_ROOT}/scripts/user/$(basename "$0")"
 
 echo "=== sync-living-from-remote ==="
 echo "Action: rsync remote living memory -> local verified memory"

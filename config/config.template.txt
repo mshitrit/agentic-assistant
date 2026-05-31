@@ -32,7 +32,7 @@ CLOUD_ID=your-cloud-id
 # Choose short, memorable keys (e.g. SBR, FAR, SNR, NHC, MDR, NMO) and keep them consistent across config and memory dirs.
 #
 # OPERATOR_{KEY}_COMPONENTS: comma-separated Jira component names to watch
-#   (pr-workflow.sh also matches GitHub PR repo names to these labels, ignoring
+#   (scripts/user/pr-workflow.sh also matches GitHub PR repo names to these labels, ignoring
 #    case, hyphens, and trailing "Remediation"/"Operator")
 # OPERATOR_{KEY}_REPO_PATH:  absolute path to a local clone of the operator repo
 #                            (leave empty to disable repo access for that operator)
@@ -72,11 +72,11 @@ GCP_PROJECT_ID=your-gcp-project-id
 # GCP region where Claude is available (e.g.global, us-east5, europe-west1)
 GCP_REGION=global
 
-# Vertex Claude model (pr-workflow.sh, Jira poller, Slack, pr-review.sh)
+# Vertex Claude model (scripts/user/pr-workflow.sh, Jira poller, Slack, scripts/user/pr-review.sh)
 # AGENT_MODEL=claude-opus-4-5
-# Max output tokens for pr-review.sh (non-streaming)
+# Max output tokens for scripts/user/pr-review.sh (non-streaming)
 # PR_REVIEW_MAX_TOKENS=8192
-# Max output tokens for pr-workflow.sh (streaming; large write_repo_file payloads)
+# Max output tokens for scripts/user/pr-workflow.sh (streaming; large write_repo_file payloads)
 # PR_WORKFLOW_MAX_TOKENS=32768
 
 # Maximum number of operator repo read operations (read_file + list_directory) per ticket analysis.
