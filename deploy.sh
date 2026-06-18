@@ -105,6 +105,7 @@ fi
 
 # ── 4. Start selected processes ───────────────────────────────────────────────
 # Clear PID file before starting new processes
+echo "Creating PID file: $PID_FILE"
 > "$PID_FILE"
 
 if [[ "$MODE" == "jira" || "$MODE" == "both" ]]; then
@@ -113,7 +114,7 @@ if [[ "$MODE" == "jira" || "$MODE" == "both" ]]; then
     nohup env PYTHONUNBUFFERED=1 $PYTHON main.py > "$MAIN_LOG" 2>&1 &
     JIRA_PID=$!
     echo "$JIRA_PID" >> "$PID_FILE"
-    echo "Jira poller started. PID: $JIRA_PID"
+    echo "Jira poller started. PID: $JIRA_PID (saved to $PID_FILE)"
 fi
 
 if [[ "$MODE" == "slack" || "$MODE" == "both" ]]; then
@@ -122,7 +123,7 @@ if [[ "$MODE" == "slack" || "$MODE" == "both" ]]; then
     nohup env PYTHONUNBUFFERED=1 $PYTHON slack_bot_main.py > "$SLACK_LOG" 2>&1 &
     SLACK_PID=$!
     echo "$SLACK_PID" >> "$PID_FILE"
-    echo "Slack bot started. PID: $SLACK_PID"
+    echo "Slack bot started. PID: $SLACK_PID (saved to $PID_FILE)"
 fi
 
 echo "Deployment complete."
