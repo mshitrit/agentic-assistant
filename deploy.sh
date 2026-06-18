@@ -63,11 +63,14 @@ git -C "$REPO_ROOT" reset --hard "$GIT_REMOTE/$DEPLOY_BRANCH"
 echo "Git sync complete (at $(git -C "$REPO_ROOT" rev-parse --short HEAD))."
 
 # Re-exec this script after git sync to ensure we run the updated version
+echo "[REEXEC-TEST] Current DEPLOY_REEXEC_DONE=${DEPLOY_REEXEC_DONE:-<unset>}"
 if [ "${DEPLOY_REEXEC_DONE:-}" != "1" ]; then
     export DEPLOY_REEXEC_DONE=1
+    echo "[REEXEC-TEST] Performing re-exec now..."
     echo "Re-executing deploy script with updated code..."
     exec "$0" "$@"
 fi
+echo "[REEXEC-TEST] Re-exec complete, continuing with deployment..."
 
 # ── 1b. Seed living memory from verified if living is empty ───────────────────
 LIVING_ROOT="memory/living"
