@@ -92,24 +92,37 @@ else
 fi
 
 # ── 3. Stop running processes ─────────────────────────────────────────────────
+PID_FILE="$REPO_ROOT/agentic_assistant.pid"
 echo "Stopping any running agent processes..."
-pkill -f "$PYTHON main.py" 2>/dev/null         || true
-pkill -f "$PYTHON slack_bot_main.py" 2>/dev/null || true
-sleep 1
+if [ -f "$PID_FILE" ]; then
+    while read -r pid; do
+        if [ -n "$pid" ]; then
+            kill "$pid" 2>/dev/null || true
+        fi
+    done < "$PID_FILE"
+    sleep 1
+fi
 
 # ── 4. Start selected processes ───────────────────────────────────────────────
+# Clear PID file before starting new processes
+> "$PID_FILE"
+
 if [[ "$MODE" == "jira" || "$MODE" == "both" ]]; then
     MAIN_LOG="logs/main_${TIMESTAMP}.log"
     echo "Starting Jira poller... logging to $MAIN_LOG"
     nohup env PYTHONUNBUFFERED=1 $PYTHON main.py > "$MAIN_LOG" 2>&1 &
-    echo "Jira poller started. PID: $!"
+    JIRA_PID=$!
+    echo "$JIRA_PID" >> "$PID_FILE"
+    echo "Jira poller started. PID: $JIRA_PID"
 fi
 
 if [[ "$MODE" == "slack" || "$MODE" == "both" ]]; then
     SLACK_LOG="logs/slack_bot_${TIMESTAMP}.log"
     echo "Starting Slack bot... logging to $SLACK_LOG"
     nohup env PYTHONUNBUFFERED=1 $PYTHON slack_bot_main.py > "$SLACK_LOG" 2>&1 &
-    echo "Slack bot started. PID: $!"
+    SLACK_PID=$!
+    echo "$SLACK_PID" >> "$PID_FILE"
+    echo "Slack bot started. PID: $SLACK_PID"
 fi
 
 echo "Deployment complete."
